@@ -2,7 +2,7 @@
 <html lang="no">
 <head>
 <meta charset="UTF-8">
-<title>SSB-tall avslører: Eksport av fisk, kreps-, bløtdyr og varer derav (SITC 03), etter fiskeart og land/handelsområde/verdensdel henger tett sammen med tillatt felte hjort</title>
+<title>SSB-tall avslører: Månedslønn for lærlinger, etter yrke, kjønn og arbeidstid henger tett sammen med jordbruksbedrifter med areal av korn- og oljevekster, etter arealgrupper</title>
 <script src="../../chart.umd.min.js"></script>
 <style>
   body { font-family: Georgia, serif; max-width: 700px; margin: 40px auto; padding: 0 20px; color: #222; }
@@ -20,12 +20,12 @@
 </head>
 <body>
   <p style="color:#888; font-size:0.85em;">Publisert 12.08.2026</p>
-  <!--ARKIV-MENY-START--><nav class="meny"><details open><summary>2026</summary><ul><li class="na">Uke 33: SSB-tall avslører: Eksport av fisk, kreps-, bløtdyr og varer derav (SITC 03), etter fiskeart og land/handelsområde/verdensdel henger tett sammen med tillatt felte hjort</li></ul></details></nav><!--ARKIV-MENY-END-->
-  <h1>SSB-tall avslører: Eksport av fisk, kreps-, bløtdyr og varer derav (SITC 03), etter fiskeart og land/handelsområde/verdensdel henger tett sammen med tillatt felte hjort</h1>
-  <p class="ingress">Tall hentet rett fra Statistisk sentralbyrå viser en påfallende sterk statistisk sammenheng (r = 0.955) mellom eksport av fisk, kreps-, bløtdyr og varer derav (sitc 03), etter fiskeart og land/handelsområde/verdensdel og tillatt felte hjort i årene 2007–2025. Om det betyr noe som helst, er en helt annen sak.</p>
+  <!--ARKIV-MENY-START--><nav class="meny"><details open><summary>2026</summary><ul><li class="na">Uke 33: SSB-tall avslører: Månedslønn for lærlinger, etter yrke, kjønn og arbeidstid henger tett sammen med jordbruksbedrifter med areal av korn- og oljevekster, etter arealgrupper</li></ul></details></nav><!--ARKIV-MENY-END-->
+  <h1>SSB-tall avslører: Månedslønn for lærlinger, etter yrke, kjønn og arbeidstid henger tett sammen med jordbruksbedrifter med areal av korn- og oljevekster, etter arealgrupper</h1>
+  <p class="ingress">Det er ingen kjent grunn til at månedslønn for lærlinger, etter yrke, kjønn og arbeidstid og jordbruksbedrifter med areal av korn- og oljevekster, etter arealgrupper skulle ha noe med hverandre å gjøre. Likevel viser SSB-tall for 2017–2024 en svært sterk korrelasjon på r = -0.908.</p>
   <canvas id="chart" height="280"></canvas>
   <p class="disclaimer">
-    Vi tar ingen forbehold. Grafen taler for seg selv. Denne siden genereres automatisk fra offentlige SSB-tall og
+    Ingen årsakssammenheng er antydet, foreslått, eller ønsket. Denne siden genereres automatisk fra offentlige SSB-tall og
     er ment som underholdning. Korrelasjon er ikke kausalitet — det er
     faktisk hele poenget med siden.
   </p>
@@ -33,18 +33,18 @@
 new Chart(document.getElementById('chart'), {
   type: 'line',
   data: {
-    labels: [2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],
+    labels: [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024],
     datasets: [
       {
-        label: 'Eksport av fisk, kreps-, bløtdyr og varer derav (SITC 03), etter fiskeart og land/handelsområde/verdensdel',
-        data: [35696, 37369, 43473, 52490, 52108, 50817, 60158, 67071, 71973, 89170, 92220, 96090, 104052, 101951, 116557, 146446, 165207, 167893, 173930],
+        label: 'Månedslønn for lærlinger, etter yrke, kjønn og arbeidstid',
+        data: [44660, 46010, 47720, 48750, 50790, 53150, 56360, 59370],
         borderColor: '#2563eb',
         yAxisID: 'y',
         tension: 0.3,
       },
       {
-        label: 'Tillatt felte hjort',
-        data: [43518, 48390, 50923, 54450, 55999, 55606, 55360, 54458, 54081, 54531, 57234, 62666, 65455, 67573, 73082, 76823, 77668, 77651, 78576],
+        label: 'Jordbruksbedrifter med areal av korn- og oljevekster, etter arealgrupper',
+        data: [10955, 10506, 10158, 10107, 10074, 9878, 9812, 9566],
         borderColor: '#dc2626',
         yAxisID: 'y1',
         tension: 0.3,
