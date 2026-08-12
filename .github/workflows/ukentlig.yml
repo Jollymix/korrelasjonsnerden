@@ -23,10 +23,10 @@ jobs:
       - name: Kjør tullkorrelasjon.py
         run: python tullkorrelasjon.py
 
-      - name: Commit og push index.html
+      - name: Commit og push index.html + arkiv
         run: |
           git config user.name "tullkorrelasjon-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add index.html
+          git add index.html arkiv
           git commit -m "Ukens tullkorrelasjon" || echo "Ingen endring å committe"
           git push

@@ -43,7 +43,10 @@ Om SSBs søke-API (verifisert ved faktiske kall mot data.ssb.no, ikke gjettet):
 ---------------------------------------------------------------------------
 """
 
+import html
 import json
+import pathlib
+import posixpath
 import random
 import re
 import statistics
@@ -293,24 +296,192 @@ def finn_beste_par(serier: list, min_overlapp: int = 5) -> dict | None:
 
 # ---------------------------------------------------------------------------
 # 6. TEKSTGENERERING (pseudo-vitenskapelig, norsk)
+#
+# Overskrift og ingress trekkes tilfeldig fra flere maler i stedet for én
+# fast setning, slik at ukentlige innlegg ikke ser ut som ren copy-paste
+# av hverandre — à la den varierte (men gjenkjennelige) tonen på
+# spurious-correlations.com.
 # ---------------------------------------------------------------------------
 
-def lag_overskrift(par: dict) -> str:
+OVERSKRIFT_MALER = [
+    "Ny analyse: {a} {retning} {b_liten}",
+    "SSB-tall avslører: {a} henger tett sammen med {b_liten}",
+    "Uka i tall: {styrke} sammenheng mellom {a} og {b_liten}",
+    "{a} og {b_liten} følger hverandre påfallende tett, viser fersk statistikk",
+    "Ingen har spurt om dette, men tallene sier det likevel: {a} vs {b_liten}",
+]
+
+INGRESS_MALER = [
+    (
+        "En gjennomgang av offisielle tall fra SSB for perioden "
+        "{fra}–{til} avdekker en {styrke} korrelasjonskoeffisient på "
+        "r = {r:.3f} mellom {a_liten} og {b_liten}. Forskere er ikke "
+        "kontaktet, og årsakssammenheng er verken undersøkt eller "
+        "sannsynlig."
+    ),
+    (
+        "Tall hentet rett fra Statistisk sentralbyrå viser en {styrke} "
+        "statistisk sammenheng (r = {r:.3f}) mellom {a_liten} og "
+        "{b_liten} i årene {fra}–{til}. Om det betyr noe som helst, er "
+        "en helt annen sak."
+    ),
+    (
+        "Mellom {fra} og {til} har {a_liten} og {b_liten} beveget seg "
+        "i {retning_kort} med en {styrke} korrelasjon på r = {r:.3f}. "
+        "Kausalitet er verken hevdet eller undersøkt."
+    ),
+    (
+        "En rask krysskjøring av SSBs offentlige tabeller gir en "
+        "{styrke} korrelasjon (r = {r:.3f}) mellom {a_liten} og "
+        "{b_liten} for perioden {fra}–{til} — akkurat den typen "
+        "sammenheng du ikke bør legge for mye i."
+    ),
+    (
+        "Det er ingen kjent grunn til at {a_liten} og {b_liten} skulle "
+        "ha noe med hverandre å gjøre. Likevel viser SSB-tall for "
+        "{fra}–{til} en {styrke} korrelasjon på r = {r:.3f}."
+    ),
+]
+
+KOMMENTAR_BANK = [
+    "Vi tar ingen forbehold. Grafen taler for seg selv.",
+    "Ingen årsakssammenheng er antydet, foreslått, eller ønsket.",
+    "SSB har ikke blitt bedt om en kommentar, og ville uansett neppe gitt en.",
+    "Dette er ikke vitenskap. Dette er to linjer som tilfeldigvis ligner på hverandre.",
+    "Korrelasjonen er ekte. Konklusjonen er det ikke.",
+]
+
+
+def korrelasjonsstyrke(r: float) -> str:
+    """Gir en styrkefrase basert på |r|, så selv setningen henger sammen
+    med hvor ekstrem korrelasjonen faktisk er."""
+    absr = abs(r)
+    if absr > 0.95:
+        return "påfallende sterk"
+    if absr > 0.90:
+        return "svært sterk"
+    return "sterk"
+
+
+def lag_tekst(par: dict) -> dict:
+    """Trekker overskrift og ingress fra malbankene over. Kalles ÉN gang
+    per kjøring — samme ukes forside- og arkivkopi skal ha identisk
+    tekst, kun menylenkene skal variere mellom dem."""
     retning = "øker i takt med" if par["r"] > 0 else "synker når"
-    return f"Ny analyse: {par['a']} {retning} {par['b'].lower()}"
-
-def lag_ingress(par: dict) -> str:
-    return (
-        f"En gjennomgang av offisielle tall fra SSB for perioden "
-        f"{par['aar'][0]}–{par['aar'][-1]} avdekker en korrelasjonskoeffisient "
-        f"på r = {par['r']:.3f} mellom {par['a'].lower()} og {par['b'].lower()}. "
-        f"Forskere er ikke kontaktet, og årsakssammenheng er verken "
-        f"undersøkt eller sannsynlig."
-    )
+    retning_kort = "samme retning" if par["r"] > 0 else "motsatt retning"
+    styrke = korrelasjonsstyrke(par["r"])
+    felter = {
+        "a": par["a"], "b": par["b"],
+        "a_liten": par["a"].lower(), "b_liten": par["b"].lower(),
+        "retning": retning, "retning_kort": retning_kort,
+        "styrke": styrke, "r": par["r"],
+        "fra": par["aar"][0], "til": par["aar"][-1],
+    }
+    overskrift = random.choice(OVERSKRIFT_MALER).format(**felter)
+    ingress = random.choice(INGRESS_MALER).format(**felter)
+    kommentar = random.choice(KOMMENTAR_BANK)
+    return {"overskrift": overskrift, "ingress": ingress, "kommentar": kommentar}
 
 
 # ---------------------------------------------------------------------------
-# 7. HTML-GENERERING
+# 7. ARKIV — hver ukes side lagres permanent under arkiv/<år>/uke-<nn>.html,
+#    og alle sider (forsiden og hver arkivside) får en innebygd, kollapsbar
+#    meny som lenker til alle tidligere uker gruppert per år. Menyen bygges
+#    fra selve filtreet under arkiv/ (ingen egen manifest-fil å holde synk)
+#    — de committede HTML-filene ER fasiten.
+# ---------------------------------------------------------------------------
+
+ARKIV_ROT = pathlib.Path("arkiv")
+TITTEL_MONSTER = re.compile(r"<title>(.*?)</title>", re.DOTALL)
+MENY_MONSTER = re.compile(
+    r"<!--ARKIV-MENY-START-->.*?<!--ARKIV-MENY-END-->", re.DOTALL
+)
+
+
+def arkivsti(aar: int, uke: int) -> str:
+    return f"arkiv/{aar}/uke-{uke:02d}.html"
+
+
+def finn_alle_innslag() -> list:
+    """Skanner arkiv/<år>/uke-<nn>.html og bygger lista menyen trenger.
+    Overskriften hentes fra hver fils <title> — filtreet er eneste
+    kilde til sannhet, det finnes ingen separat manifest-fil."""
+    innslag = []
+    if ARKIV_ROT.is_dir():
+        for fil in ARKIV_ROT.glob("*/uke-*.html"):
+            m = re.match(r"uke-(\d+)$", fil.stem)
+            if not m or not fil.parent.name.isdigit():
+                continue
+            treff = TITTEL_MONSTER.search(fil.read_text(encoding="utf-8"))
+            # <title> i filen er allerede HTML-escaped ved skriving — hent
+            # ut ren tekst her, så vi ikke escaper to ganger når menyen
+            # bygges (se bygg_meny_html).
+            tittel = html.unescape(treff.group(1)) if treff else fil.stem
+            innslag.append({
+                "aar": int(fil.parent.name),
+                "uke": int(m.group(1)),
+                "sti": fil.as_posix(),
+                "tittel": tittel,
+            })
+    return innslag
+
+
+def relativ_lenke(til_sti: str, fra_fil: str) -> str:
+    """Regner ut riktig relativ lenke fra fra_fil til til_sti, uansett
+    hvor dypt i arkiv/-treet fra_fil ligger."""
+    fra_katalog = posixpath.dirname(fra_fil) or "."
+    return posixpath.relpath(til_sti, fra_katalog)
+
+
+def bygg_meny_html(alle_innslag: list, denne_sti: str) -> str:
+    """Genererer en kollapsbar <details>-meny gruppert per år (nyeste
+    år/uke øverst). Gjeldende side vises som ren tekst, ikke lenke."""
+    if not alle_innslag:
+        return ""
+
+    per_aar = {}
+    for e in sorted(alle_innslag, key=lambda e: (e["aar"], e["uke"]), reverse=True):
+        per_aar.setdefault(e["aar"], []).append(e)
+
+    nyeste_aar = max(per_aar)
+    gjeldende_aar = next((e["aar"] for e in alle_innslag if e["sti"] == denne_sti), None)
+    deler = ['<nav class="meny">']
+    for aar in sorted(per_aar, reverse=True):
+        apen = " open" if aar in (nyeste_aar, gjeldende_aar) else ""
+        deler.append(f"<details{apen}><summary>{aar}</summary><ul>")
+        for e in per_aar[aar]:
+            tittel = html.escape(e["tittel"])
+            if e["sti"] == denne_sti:
+                deler.append(f'<li class="na">Uke {e["uke"]}: {tittel}</li>')
+            else:
+                lenke = relativ_lenke(e["sti"], denne_sti)
+                deler.append(f'<li><a href="{lenke}">Uke {e["uke"]}: {tittel}</a></li>')
+        deler.append("</ul></details>")
+    deler.append("</nav>")
+    return "".join(deler)
+
+
+def oppdater_meny_i_eldre_filer(alle_innslag: list, unnta: set) -> None:
+    """Bytter ut menyblokken i hver eksisterende side (unntatt de som
+    skrives fullt ut denne kjøringen) slik at gamle sider også lenker til
+    ukens nye side — ellers ville menyen deres fryse på generasjonstidspunktet."""
+    for e in alle_innslag:
+        if e["sti"] in unnta:
+            continue
+        fil = pathlib.Path(e["sti"])
+        innhold = fil.read_text(encoding="utf-8")
+        ny_meny = (
+            "<!--ARKIV-MENY-START-->"
+            + bygg_meny_html(alle_innslag, e["sti"])
+            + "<!--ARKIV-MENY-END-->"
+        )
+        oppdatert = MENY_MONSTER.sub(lambda _: ny_meny, innhold, count=1)
+        if oppdatert != innhold:
+            fil.write_text(oppdatert, encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# 8. HTML-GENERERING
 #
 # Chart.js lastes fra en lokal fil (chart.umd.min.js, ligger ved siden av
 # index.html i repoet) i stedet for en CDN. Det er ikke bare for å unngå
@@ -326,7 +497,7 @@ HTML_MAL = """<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <title>{tittel}</title>
-<script src="chart.umd.min.js"></script>
+<script src="{chartjs_sti}"></script>
 <style>
   body {{ font-family: Georgia, serif; max-width: 700px; margin: 40px auto; padding: 0 20px; color: #222; }}
   h1 {{ font-size: 1.6em; line-height: 1.3; }}
@@ -334,17 +505,23 @@ HTML_MAL = """<!DOCTYPE html>
   .r-verdi {{ font-family: monospace; background: #f0f0f0; padding: 2px 6px; }}
   .disclaimer {{ margin-top: 40px; font-size: 0.85em; color: #888; border-top: 1px solid #ddd; padding-top: 12px; }}
   canvas {{ margin-top: 30px; }}
+  .meny {{ margin: 14px 0 26px; font-size: 0.9em; }}
+  .meny summary {{ cursor: pointer; color: #2563eb; }}
+  .meny ul {{ list-style: none; padding-left: 16px; margin: 6px 0 10px; }}
+  .meny li {{ margin: 3px 0; }}
+  .meny .na {{ color: #888; font-style: italic; }}
 </style>
 </head>
 <body>
   <p style="color:#888; font-size:0.85em;">Publisert {dato}</p>
+  <!--ARKIV-MENY-START-->{meny}<!--ARKIV-MENY-END-->
   <h1>{tittel}</h1>
   <p class="ingress">{ingress}</p>
   <canvas id="chart" height="280"></canvas>
   <p class="disclaimer">
-    Denne siden genereres automatisk fra offentlige SSB-tall og er ment som
-    underholdning. Korrelasjon er ikke kausalitet — det er faktisk hele
-    poenget med siden.
+    {kommentar} Denne siden genereres automatisk fra offentlige SSB-tall og
+    er ment som underholdning. Korrelasjon er ikke kausalitet — det er
+    faktisk hele poenget med siden.
   </p>
 <script>
 new Chart(document.getElementById('chart'), {{
@@ -381,11 +558,14 @@ new Chart(document.getElementById('chart'), {{
 """
 
 
-def lag_html(par: dict) -> str:
+def lag_html(par: dict, tekst: dict, denne_sti: str, meny_html: str) -> str:
     return HTML_MAL.format(
-        tittel=lag_overskrift(par),
-        ingress=lag_ingress(par),
+        tittel=html.escape(tekst["overskrift"]),
+        ingress=html.escape(tekst["ingress"]),
+        kommentar=html.escape(tekst["kommentar"]),
+        meny=meny_html,
         dato=datetime.now().strftime("%d.%m.%Y"),
+        chartjs_sti=relativ_lenke("chart.umd.min.js", denne_sti),
         aar=json.dumps(par["aar"]),
         navn_a=par["a"],
         navn_b=par["b"],
@@ -395,7 +575,7 @@ def lag_html(par: dict) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 8. HOVEDPROGRAM
+# 9. HOVEDPROGRAM
 # ---------------------------------------------------------------------------
 
 def main():
@@ -410,12 +590,29 @@ def main():
               "MAKS_TABELLER_PER_KJORING, eller senk terskelen.")
         return
 
-    html = lag_html(par)
-    with open("index.html", "w", encoding="utf-8") as f:
-        f.write(html)
+    tekst = lag_tekst(par)
+
+    iso = datetime.now().isocalendar()
+    aar, uke = iso.year, iso.week
+    ny_sti = arkivsti(aar, uke)
+
+    # Ekskluder en ev. eksisterende oppføring for akkurat denne uken (f.eks.
+    # ved en manuell re-kjøring samme uke) — den skrives uansett over under,
+    # og skal ikke stå igjen som en duplikat i menyen.
+    eksisterende = [e for e in finn_alle_innslag() if e["sti"] != ny_sti]
+    alle = eksisterende + [{"aar": aar, "uke": uke, "sti": ny_sti, "tittel": tekst["overskrift"]}]
+
+    pathlib.Path(ny_sti).parent.mkdir(parents=True, exist_ok=True)
+    for sti in (ny_sti, "index.html"):
+        meny = bygg_meny_html(alle, denne_sti=sti)
+        innhold = lag_html(par, tekst, sti, meny)
+        with open(sti, "w", encoding="utf-8") as f:
+            f.write(innhold)
+
+    oppdater_meny_i_eldre_filer(alle, unnta={ny_sti, "index.html"})
 
     print(f"Ferdig: {par['a']} vs {par['b']} (r = {par['r']:.3f})")
-    print("Skrev index.html")
+    print(f"Skrev index.html og {ny_sti} (arkiv har nå {len(alle)} innslag)")
 
 
 if __name__ == "__main__":
