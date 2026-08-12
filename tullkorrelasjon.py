@@ -10,7 +10,12 @@ pseudo-seriøs måte à la Tyler Vigen sin spurious-correlations.com.
 
 Kjør ukentlig via GitHub Actions (se .github/workflows/ukentlig.yml).
 
-Krav: ingen — kun standardbiblioteket (urllib, json, statistics ...).
+Krav: ingen harde avhengigheter — kun standardbiblioteket (urllib, json,
+statistics ...). Ett unntak: «Nerden spekulerer»-seksjonen bruker Claude
+API (pakken `anthropic`, se requirements.txt) til å skrive selve
+formuleringen. Mangler pakken eller ANTHROPIC_API_KEY, faller scriptet
+automatisk tilbake til statisk tekst — det krasjer aldri på grunn av
+dette.
 
 ---------------------------------------------------------------------------
 Om SSBs søke-API (verifisert ved faktiske kall mot data.ssb.no, ikke gjettet):
@@ -351,6 +356,75 @@ KOMMENTAR_BANK = [
     "Korrelasjonen er ekte. Konklusjonen er det ikke.",
 ]
 
+# "Nerden spekulerer" — selve formuleringen skrives av Claude API (se
+# generer_spekulasjon()) i stedet for enda en statisk malbank, slik at
+# den blir ny og treffsikker for akkurat ukens tall. Banken under er kun
+# en nødløsning hvis API-kallet av en eller annen grunn ikke lykkes
+# (mangler pakke/nøkkel, nettverksfeil, avvist svar) — den ukentlige
+# jobben skal aldri stoppe opp på grunn av dette.
+FALLBACK_SPEKULASJON = [
+    "Tallene antyder en sammenheng vi ikke har grunnlag for å avvise. "
+    "Vi anbefaler at ingen handler basert på denne analysen.",
+    "Basert på grafen alene fremstår årsakssammenhengen som statistisk "
+    "uomtvistelig. Eventuelle innvendinger fra fagfolk er ikke hensyntatt.",
+    "Dersom trenden fortsetter, bør noen kanskje se nærmere på dette. "
+    "Vi kommer ikke til å være de som gjør det.",
+    "Det finnes ingen åpenbar mekanisme her, noe vi velger å se på som "
+    "en styrke ved analysen snarere enn en svakhet.",
+]
+
+SPEKULASJON_SYSTEMPROMPT = (
+    "Du skriver en kort seksjon kalt «Nerden spekulerer» til en norsk "
+    "tulle-korrelasjon-side (à la Tyler Vigens spurious-correlations.com). "
+    "Du får to variabler fra SSB-statistikk, korrelasjonen mellom dem, og "
+    "hvilken av dem som (for moro skyld) skal fremstilles som årsaken. "
+    "Skriv 1–3 setninger på norsk (bokmål) som:\n"
+    "- later som korrelasjonen viser en reell årsakssammenheng\n"
+    "- trekker en absurd, men logisk formulert konklusjon eller "
+    "anbefaling basert på tallene\n"
+    "- er saklig og underdreven i tonen, med overdreven statistisk "
+    "selvsikkerhet — som om dette var en seriøs analyse\n"
+    "Ikke forklar vitsen eller nevn at dette er humor/ironi. Ikke gjenta "
+    "«Nerden spekulerer» i selve teksten. Varier setningsoppbygningen fra "
+    "gang til gang — ikke bruk samme faste struktur hver gang. Svar KUN "
+    "med selve teksten, uten anførselstegn eller forklaring."
+)
+
+SPEKULASJON_BRUKERMAL = (
+    "Årsak (later som): {arsak}\n"
+    "Virkning (later som): {virkning}\n"
+    "Retning: {arsak} {retning} {virkning_liten}\n"
+    "Korrelasjon: r = {r:.3f} ({styrke})\n"
+    "Periode: {fra}–{til}"
+)
+
+
+def generer_spekulasjon(felter: dict) -> str:
+    """Ber Claude API skrive «Nerden spekulerer»-teksten for ukens tall.
+    Feiler aldri utad — enhver feil (manglende pakke/nøkkel, nettverk,
+    avvist svar) fanges bredt med vilje, siden dette er en ukentlig
+    cron-jobb som skal degradere til statisk fallback-tekst, ikke stoppe."""
+    try:
+        import anthropic
+
+        client = anthropic.Anthropic()  # leser ANTHROPIC_API_KEY fra miljøet
+        respons = client.messages.create(
+            model="claude-opus-5",
+            max_tokens=300,
+            output_config={"effort": "low"},  # enkel kreativ tekstoppgave
+            system=SPEKULASJON_SYSTEMPROMPT,
+            messages=[{"role": "user", "content": SPEKULASJON_BRUKERMAL.format(**felter)}],
+        )
+        if respons.stop_reason == "refusal":
+            raise RuntimeError("Claude avviste forespørselen")
+        tekst = "".join(b.text for b in respons.content if b.type == "text").strip()
+        if not tekst:
+            raise RuntimeError("Tomt svar fra Claude")
+        return tekst
+    except Exception as e:
+        print(f"  Klarte ikke generere 'Nerden spekulerer' via Claude API ({e}) — bruker fallback-tekst.")
+        return random.choice(FALLBACK_SPEKULASJON)
+
 
 def korrelasjonsstyrke(r: float) -> str:
     """Gir en styrkefrase basert på |r|, så selv setningen henger sammen
@@ -364,15 +438,20 @@ def korrelasjonsstyrke(r: float) -> str:
 
 
 def lag_tekst(par: dict) -> dict:
-    """Trekker overskrift og ingress fra malbankene over. Kalles ÉN gang
-    per kjøring — samme ukes forside- og arkivkopi skal ha identisk
-    tekst, kun menylenkene skal variere mellom dem."""
+    """Trekker overskrift og ingress fra malbankene over, og ber Claude
+    API skrive «Nerden spekulerer». Kalles ÉN gang per kjøring — samme
+    ukes forside- og arkivkopi skal ha identisk tekst, kun menylenkene
+    skal variere mellom dem."""
     retning = "øker i takt med" if par["r"] > 0 else "synker når"
     retning_kort = "samme retning" if par["r"] > 0 else "motsatt retning"
     styrke = korrelasjonsstyrke(par["r"])
+    # Tilfeldig hvem som later som "årsak" — gir variasjon fra uke til
+    # uke i hvem som "får skylden", uavhengig av hvilken som er a/b i data.
+    arsak, virkning = (par["a"], par["b"]) if random.random() < 0.5 else (par["b"], par["a"])
     felter = {
         "a": par["a"], "b": par["b"],
         "a_liten": par["a"].lower(), "b_liten": par["b"].lower(),
+        "arsak": arsak, "virkning": virkning, "virkning_liten": virkning.lower(),
         "retning": retning, "retning_kort": retning_kort,
         "styrke": styrke, "r": par["r"],
         "fra": par["aar"][0], "til": par["aar"][-1],
@@ -380,7 +459,11 @@ def lag_tekst(par: dict) -> dict:
     overskrift = random.choice(OVERSKRIFT_MALER).format(**felter)
     ingress = random.choice(INGRESS_MALER).format(**felter)
     kommentar = random.choice(KOMMENTAR_BANK)
-    return {"overskrift": overskrift, "ingress": ingress, "kommentar": kommentar}
+    spekulasjon = generer_spekulasjon(felter)
+    return {
+        "overskrift": overskrift, "ingress": ingress,
+        "kommentar": kommentar, "spekulasjon": spekulasjon,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -510,6 +593,8 @@ HTML_MAL = """<!DOCTYPE html>
   .meny ul {{ list-style: none; padding-left: 16px; margin: 6px 0 10px; }}
   .meny li {{ margin: 3px 0; }}
   .meny .na {{ color: #888; font-style: italic; }}
+  .spekulasjon {{ margin-top: 26px; padding: 14px 16px; background: #f7f5ef; border-left: 3px solid #999; }}
+  .spekulasjon-tittel {{ font-weight: bold; margin: 0 0 6px; }}
 </style>
 </head>
 <body>
@@ -518,6 +603,10 @@ HTML_MAL = """<!DOCTYPE html>
   <h1>{tittel}</h1>
   <p class="ingress">{ingress}</p>
   <canvas id="chart" height="280"></canvas>
+  <div class="spekulasjon">
+    <p class="spekulasjon-tittel">Nerden spekulerer:</p>
+    <p>{spekulasjon}</p>
+  </div>
   <p class="disclaimer">
     {kommentar} Denne siden genereres automatisk fra offentlige SSB-tall og
     er ment som underholdning. Korrelasjon er ikke kausalitet — det er
@@ -563,6 +652,7 @@ def lag_html(par: dict, tekst: dict, denne_sti: str, meny_html: str) -> str:
         tittel=html.escape(tekst["overskrift"]),
         ingress=html.escape(tekst["ingress"]),
         kommentar=html.escape(tekst["kommentar"]),
+        spekulasjon=html.escape(tekst["spekulasjon"]),
         meny=meny_html,
         dato=datetime.now().strftime("%d.%m.%Y"),
         chartjs_sti=relativ_lenke("chart.umd.min.js", denne_sti),

@@ -12,7 +12,8 @@ Hver uke:
 3. Regner Pearson-korrelasjon mellom alle par av serier og plukker et
    tilfeldig par med |r| > 0,85.
 4. Genererer `index.html` med en pseudo-vitenskapelig norsk tekst (trukket
-   tilfeldig fra flere maler, se `OVERSKRIFT_MALER`/`INGRESS_MALER`) og en
+   tilfeldig fra flere maler, se `OVERSKRIFT_MALER`/`INGRESS_MALER`), en
+   "Nerden spekulerer"-seksjon skrevet av Claude API (se under), og en
    Chart.js-graf.
 
 Kjøres ukentlig (mandager kl. 06:00 UTC) via
@@ -29,13 +30,29 @@ kjøring direkte fra filtreet under `arkiv/` (`finn_alle_innslag()` i
 `tullkorrelasjon.py`), og gamle sider får menyen sin oppdatert i etterkant
 slik at de også lenker til nyere uker.
 
+## «Nerden spekulerer»
+
+Hver side har en boks der Claude API (`claude-opus-5`) skriver 1–3
+tørre, underdrevne setninger som later som ukens korrelasjon er en reell
+årsakssammenheng, og trekker en absurd men logisk-klingende konklusjon
+eller anbefaling. Krever en `ANTHROPIC_API_KEY` — sett den som repo-secret
+under **Settings → Secrets and variables → Actions** for at GitHub
+Actions-kjøringen skal bruke ekte Claude-generert tekst. Mangler
+nøkkelen (eller `anthropic`-pakken, eller nettet svikter), faller
+scriptet automatisk tilbake til en liten bank med statisk tekst —
+kjøringen feiler aldri på grunn av dette.
+
 ## Kjøre lokalt
 
 ```bash
+pip install -r requirements.txt
 python tullkorrelasjon.py
 ```
 
-Ingen avhengigheter utover standardbiblioteket.
+Kjernescriptet bruker kun standardbiblioteket. Eneste avhengighet
+(`anthropic`, i `requirements.txt`) brukes til "Nerden spekulerer" — se
+over. Uten `ANTHROPIC_API_KEY` satt i miljøet kjører scriptet fint, bare
+med fallback-tekst i den seksjonen.
 
 ## Om SSBs søke-API
 

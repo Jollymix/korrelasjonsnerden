@@ -2,7 +2,7 @@
 <html lang="no">
 <head>
 <meta charset="UTF-8">
-<title>SSB-tall avslører: Månedslønn for lærlinger, etter yrke, kjønn og arbeidstid henger tett sammen med jordbruksbedrifter med areal av korn- og oljevekster, etter arealgrupper</title>
+<title>Andel bosatte i tettsteder med trygg tilgang til rekreasjonsareal og nærturterreng, etter alder (prosent) og kjøretøygrupper følger hverandre påfallende tett, viser fersk statistikk</title>
 <script src="../../chart.umd.min.js"></script>
 <style>
   body { font-family: Georgia, serif; max-width: 700px; margin: 40px auto; padding: 0 20px; color: #222; }
@@ -16,16 +16,22 @@
   .meny ul { list-style: none; padding-left: 16px; margin: 6px 0 10px; }
   .meny li { margin: 3px 0; }
   .meny .na { color: #888; font-style: italic; }
+  .spekulasjon { margin-top: 26px; padding: 14px 16px; background: #f7f5ef; border-left: 3px solid #999; }
+  .spekulasjon-tittel { font-weight: bold; margin: 0 0 6px; }
 </style>
 </head>
 <body>
   <p style="color:#888; font-size:0.85em;">Publisert 12.08.2026</p>
-  <!--ARKIV-MENY-START--><nav class="meny"><details open><summary>2026</summary><ul><li class="na">Uke 33: SSB-tall avslører: Månedslønn for lærlinger, etter yrke, kjønn og arbeidstid henger tett sammen med jordbruksbedrifter med areal av korn- og oljevekster, etter arealgrupper</li></ul></details></nav><!--ARKIV-MENY-END-->
-  <h1>SSB-tall avslører: Månedslønn for lærlinger, etter yrke, kjønn og arbeidstid henger tett sammen med jordbruksbedrifter med areal av korn- og oljevekster, etter arealgrupper</h1>
-  <p class="ingress">Det er ingen kjent grunn til at månedslønn for lærlinger, etter yrke, kjønn og arbeidstid og jordbruksbedrifter med areal av korn- og oljevekster, etter arealgrupper skulle ha noe med hverandre å gjøre. Likevel viser SSB-tall for 2017–2024 en svært sterk korrelasjon på r = -0.908.</p>
+  <!--ARKIV-MENY-START--><nav class="meny"><details open><summary>2026</summary><ul><li class="na">Uke 33: Andel bosatte i tettsteder med trygg tilgang til rekreasjonsareal og nærturterreng, etter alder (prosent) og kjøretøygrupper følger hverandre påfallende tett, viser fersk statistikk</li></ul></details></nav><!--ARKIV-MENY-END-->
+  <h1>Andel bosatte i tettsteder med trygg tilgang til rekreasjonsareal og nærturterreng, etter alder (prosent) og kjøretøygrupper følger hverandre påfallende tett, viser fersk statistikk</h1>
+  <p class="ingress">En rask krysskjøring av SSBs offentlige tabeller gir en svært sterk korrelasjon (r = 0.950) mellom andel bosatte i tettsteder med trygg tilgang til rekreasjonsareal og nærturterreng, etter alder (prosent) og kjøretøygrupper for perioden 2013–2024 — akkurat den typen sammenheng du ikke bør legge for mye i.</p>
   <canvas id="chart" height="280"></canvas>
+  <div class="spekulasjon">
+    <p class="spekulasjon-tittel">Nerden spekulerer:</p>
+    <p>Dersom trenden fortsetter, bør noen kanskje se nærmere på dette. Vi kommer ikke til å være de som gjør det.</p>
+  </div>
   <p class="disclaimer">
-    Ingen årsakssammenheng er antydet, foreslått, eller ønsket. Denne siden genereres automatisk fra offentlige SSB-tall og
+    Vi tar ingen forbehold. Grafen taler for seg selv. Denne siden genereres automatisk fra offentlige SSB-tall og
     er ment som underholdning. Korrelasjon er ikke kausalitet — det er
     faktisk hele poenget med siden.
   </p>
@@ -33,18 +39,18 @@
 new Chart(document.getElementById('chart'), {
   type: 'line',
   data: {
-    labels: [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024],
+    labels: [2013, 2016, 2018, 2020, 2022, 2024],
     datasets: [
       {
-        label: 'Månedslønn for lærlinger, etter yrke, kjønn og arbeidstid',
-        data: [44660, 46010, 47720, 48750, 50790, 53150, 56360, 59370],
+        label: 'Andel bosatte i tettsteder med trygg tilgang til rekreasjonsareal og nærturterreng, etter alder (prosent)',
+        data: [32, 33, 40, 41, 44, 43],
         borderColor: '#2563eb',
         yAxisID: 'y',
         tension: 0.3,
       },
       {
-        label: 'Jordbruksbedrifter med areal av korn- og oljevekster, etter arealgrupper',
-        data: [10955, 10506, 10158, 10107, 10074, 9878, 9812, 9566],
+        label: 'Kjøretøygrupper',
+        data: [4980051, 5335076, 5515360, 5685785, 5832263, 5828281],
         borderColor: '#dc2626',
         yAxisID: 'y1',
         tension: 0.3,

@@ -18,10 +18,19 @@ jobs:
         with:
           python-version: '3.12'
 
-      # Scriptet bruker kun standardbiblioteket (urllib, json, statistics),
-      # så det er ingen avhengigheter å installere.
+      # Kjernescriptet bruker kun standardbiblioteket — eneste avhengighet
+      # er anthropic-pakken til "Nerden spekulerer" (se requirements.txt).
+      - name: Installer avhengigheter
+        run: pip install -r requirements.txt
+
       - name: Kjør tullkorrelasjon.py
         run: python tullkorrelasjon.py
+        env:
+          # Må legges inn som repo-secret (Settings → Secrets and variables
+          # → Actions) for at "Nerden spekulerer" skal bruke ekte
+          # Claude-generert tekst. Uten den brukes statisk fallback-tekst —
+          # scriptet feiler ikke.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Commit og push index.html + arkiv
         run: |
