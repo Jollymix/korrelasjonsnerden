@@ -311,6 +311,14 @@ def lag_ingress(par: dict) -> str:
 
 # ---------------------------------------------------------------------------
 # 7. HTML-GENERERING
+#
+# Chart.js lastes fra en lokal fil (chart.umd.min.js, ligger ved siden av
+# index.html i repoet) i stedet for en CDN. Det er ikke bare for å unngå
+# et eksternt avhengighetspunkt på GitHub Pages — under testing viste det
+# seg at cdnjs.cloudflare.com rett og slett ikke var DNS-oppløselig i
+# nettleseren som skulle vise en lokalt åpnet index.html (net::ERR_NAME_NOT_RESOLVED),
+# noe som gjorde grafen usynlig. Se scripts/hent_chartjs.py for hvordan
+# filen ble hentet ned.
 # ---------------------------------------------------------------------------
 
 HTML_MAL = """<!DOCTYPE html>
@@ -318,7 +326,7 @@ HTML_MAL = """<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <title>{tittel}</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="chart.umd.min.js"></script>
 <style>
   body {{ font-family: Georgia, serif; max-width: 700px; margin: 40px auto; padding: 0 20px; color: #222; }}
   h1 {{ font-size: 1.6em; line-height: 1.3; }}

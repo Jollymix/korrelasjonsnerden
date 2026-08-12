@@ -2,8 +2,8 @@
 <html lang="no">
 <head>
 <meta charset="UTF-8">
-<title>Ny analyse: Tilfeller av tyveri og skadeverk siste 12 måneder, etter type lovbrudd og sted, kjønn og tid (prosent) synker når drepte eller skadde i trafikkulykker, etter alder, trafikantgruppe og politidistrikt</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<title>Ny analyse: Beregnet total slaktevekt i tonn for elg, etter alder og kjønn øker i takt med samisk statistikk. jordbruksareal i drift i stn-området (dekar)</title>
+<script src="chart.umd.min.js"></script>
 <style>
   body { font-family: Georgia, serif; max-width: 700px; margin: 40px auto; padding: 0 20px; color: #222; }
   h1 { font-size: 1.6em; line-height: 1.3; }
@@ -15,8 +15,8 @@
 </head>
 <body>
   <p style="color:#888; font-size:0.85em;">Publisert 12.08.2026</p>
-  <h1>Ny analyse: Tilfeller av tyveri og skadeverk siste 12 måneder, etter type lovbrudd og sted, kjønn og tid (prosent) synker når drepte eller skadde i trafikkulykker, etter alder, trafikantgruppe og politidistrikt</h1>
-  <p class="ingress">En gjennomgang av offisielle tall fra SSB for perioden 2001–2023 avdekker en korrelasjonskoeffisient på r = -0.943 mellom tilfeller av tyveri og skadeverk siste 12 måneder, etter type lovbrudd og sted, kjønn og tid (prosent) og drepte eller skadde i trafikkulykker, etter alder, trafikantgruppe og politidistrikt. Forskere er ikke kontaktet, og årsakssammenheng er verken undersøkt eller sannsynlig.</p>
+  <h1>Ny analyse: Beregnet total slaktevekt i tonn for elg, etter alder og kjønn øker i takt med samisk statistikk. jordbruksareal i drift i stn-området (dekar)</h1>
+  <p class="ingress">En gjennomgang av offisielle tall fra SSB for perioden 1999–2016 avdekker en korrelasjonskoeffisient på r = 0.850 mellom beregnet total slaktevekt i tonn for elg, etter alder og kjønn og samisk statistikk. jordbruksareal i drift i stn-området (dekar). Forskere er ikke kontaktet, og årsakssammenheng er verken undersøkt eller sannsynlig.</p>
   <canvas id="chart" height="280"></canvas>
   <p class="disclaimer">
     Denne siden genereres automatisk fra offentlige SSB-tall og er ment som
@@ -27,18 +27,18 @@
 new Chart(document.getElementById('chart'), {
   type: 'line',
   data: {
-    labels: [2001, 2004, 2007, 2012, 2015, 2018, 2023],
+    labels: [1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016],
     datasets: [
       {
-        label: 'Tilfeller av tyveri og skadeverk siste 12 måneder, etter type lovbrudd og sted, kjønn og tid (prosent)',
-        data: [20, 22, 22, 24, 26, 27, 30],
+        label: 'Beregnet total slaktevekt i tonn for elg, etter alder og kjønn',
+        data: [5281, 5044, 4931, 4999, 5111, 4886, 4766, 4658, 4768, 4804, 4806, 4883, 4922, 4480, 4508, 4278, 4023, 3905],
         borderColor: '#2563eb',
         yAxisID: 'y',
         tension: 0.3,
       },
       {
-        label: 'Drepte eller skadde i trafikkulykker, etter alder, trafikantgruppe og politidistrikt',
-        data: [5664, 5899, 5963, 4176, 2743, 2462, 1962],
+        label: 'Samisk statistikk. Jordbruksareal i drift i STN-området (dekar)',
+        data: [215052, 216340, 214893, 214572, 211695, 208931, 207815, 207234, 206418, 203751, 199820, 199170, 194808, 193742, 191256, 187570, 187037, 186946],
         borderColor: '#dc2626',
         yAxisID: 'y1',
         tension: 0.3,
