@@ -38,4 +38,22 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git add index.html arkiv
           git commit -m "Ukens tullkorrelasjon" || echo "Ingen endring å committe"
-          git push
+
+          # Scriptet bruker halvannet minutt+ på SSB-kall før dette steget,
+          # så main kan ha beveget seg i mellomtiden (manuell trigger,
+          # samtidig kjøring e.l.) — push kan da bli avvist ("fetch first").
+          # Hent inn nyeste main og prøv på nytt et par ganger. Ved
+          # konflikt vinner VÅR nettopp genererte index.html/arkiv-fil
+          # (-X ours) — det er alltid riktig for disse maskingenererte
+          # øyeblikksbildene at den sist ferdige kjøringen representerer
+          # "ukens" resultat.
+          for forsok in 1 2 3 4 5; do
+            if git push; then
+              exit 0
+            fi
+            echo "Push avvist (forsøk $forsok) — henter main på nytt og prøver igjen ..."
+            git fetch origin main
+            git merge -X ours --no-edit origin/main
+          done
+          echo "Klarte ikke pushe etter flere forsøk." >&2
+          exit 1
