@@ -2,7 +2,7 @@
 <html lang="no">
 <head>
 <meta charset="UTF-8">
-<title>Ingen har spurt om dette, men tallene sier det likevel: Etternavn brukt av 200 personer eller flere vs prosentvise bidrag av energi og næringsstoff frå selde matvarer</title>
+<title>Etternavn brukt av 200 personer eller flere og arealbruk i tettsteder, per kommune (km²) følger hverandre påfallende tett, viser fersk statistikk</title>
 <script src="../../chart.umd.min.js"></script>
 <style>
   body { font-family: Georgia, serif; max-width: 700px; margin: 40px auto; padding: 0 20px; color: #222; }
@@ -22,13 +22,13 @@
 </head>
 <body>
   <p style="color:#888; font-size:0.85em;">Publisert 12.08.2026</p>
-  <!--ARKIV-MENY-START--><nav class="meny"><details open><summary>2026</summary><ul><li class="na">Uke 33: Ingen har spurt om dette, men tallene sier det likevel: Etternavn brukt av 200 personer eller flere vs prosentvise bidrag av energi og næringsstoff frå selde matvarer</li></ul></details></nav><!--ARKIV-MENY-END-->
-  <h1>Ingen har spurt om dette, men tallene sier det likevel: Etternavn brukt av 200 personer eller flere vs prosentvise bidrag av energi og næringsstoff frå selde matvarer</h1>
-  <p class="ingress">En gjennomgang av offisielle tall fra SSB for perioden 2018–2025 avdekker en svært sterk korrelasjonskoeffisient på r = -0.944 mellom etternavn brukt av 200 personer eller flere og prosentvise bidrag av energi og næringsstoff frå selde matvarer. Forskere er ikke kontaktet, og årsakssammenheng er verken undersøkt eller sannsynlig.</p>
+  <!--ARKIV-MENY-START--><nav class="meny"><details open><summary>2026</summary><ul><li class="na">Uke 33: Etternavn brukt av 200 personer eller flere og arealbruk i tettsteder, per kommune (km²) følger hverandre påfallende tett, viser fersk statistikk</li></ul></details></nav><!--ARKIV-MENY-END-->
+  <h1>Etternavn brukt av 200 personer eller flere og arealbruk i tettsteder, per kommune (km²) følger hverandre påfallende tett, viser fersk statistikk</h1>
+  <p class="ingress">Det er ingen kjent grunn til at etternavn brukt av 200 personer eller flere og arealbruk i tettsteder, per kommune (km²) skulle ha noe med hverandre å gjøre. Likevel viser SSB-tall for 2018–2025 en påfallende sterk korrelasjon på r = 0.996.</p>
   <canvas id="chart" height="280"></canvas>
   <div class="spekulasjon">
     <p class="spekulasjon-tittel">Nerden spekulerer:</p>
-    <p>Med r = −0,944 er saken i praksis avgjort: hver gang nordmenn henter en større andel av energien sin fra de solgte matvarene, faller antallet etternavn som passerer 200 bærere. Mekanismen er neppe komplisert – navn krever plass i registeret, og næringsstoffene tar den plassen først. Skal vi bevare etternavnsmangfoldet fram mot 2030, bør kostholdets prosentbidrag holdes nede med minst ett prosentpoeng i året.</p>
+    <p>Med r = 0.996 over åtte årganger er saken i praksis avgjort: hvert nytt etternavn som passerer 200 bærere, utløser en målbar utvidelse av tettstedsarealet. Mekanismen er trivielt logisk — folk med samme etternavn må bo et sted, og de bor ikke oppå hverandre. Kommuner med presset arealregnskap bør derfor vurdere å innføre en midlertidig stans i navneendringer inntil boligreserven er brakt i balanse.</p>
   </div>
   <p class="disclaimer">
     Dette er ikke vitenskap. Dette er to linjer som tilfeldigvis ligner på hverandre. Denne siden genereres automatisk fra offentlige SSB-tall og
@@ -49,8 +49,8 @@ new Chart(document.getElementById('chart'), {
         tension: 0.3,
       },
       {
-        label: 'Prosentvise bidrag av energi og næringsstoff frå selde matvarer',
-        data: [25.6, 25.5, 25.1, 24.6, 24.9, 24.7, 24.2, 24.1],
+        label: 'Arealbruk i tettsteder, per kommune (km²)',
+        data: [881.17, 883.58, 886.48, 889.07, 891.31, 897.06, 901.08, 902.89],
         borderColor: '#dc2626',
         yAxisID: 'y1',
         tension: 0.3,
