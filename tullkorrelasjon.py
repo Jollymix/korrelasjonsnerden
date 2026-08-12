@@ -76,12 +76,14 @@ SOKEORD = [
     "smør", "ost", "melk", "egg", "kaffe", "øl", "vin", "brus", "sjokolade",
     "poteter", "korn", "bær", "fisk", "laks", "torsk",
     "elg", "hjort", "rein", "bjørn", "ulv", "gaupe", "jakt", "fiske", "sopp",
-    "skilsmisser", "fødsler", "ekteskap", "gravferd",
+    "skilsmisser", "fødsler", "ekteskap",
     "brann", "trafikkulykker", "tyveri", "innbrudd",
     "konkurser", "arbeidsledige", "sykefravær", "lønn",
     "snøscooter", "sykkel", "motorsykkel", "traktor", "campingvogn",
     "is", "snø", "regn", "vind", "temperatur", "flom",
 ]
+# ("gravferd" er bevisst fjernet — direkte dødsrelatert søkeord, se
+# INNHOLDSFILTER-seksjonen lenger ned.)
 
 # Hvor mange søkeord vi bruker og hvor mange kandidattabeller vi henter data
 # for i én kjøring — begrenset for å holde oss godt innenfor SSBs
@@ -129,13 +131,52 @@ def _api_get(sti: str, params: dict | None = None, forsok: int = 0) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# INNHOLDSFILTER — vi skal aldri tulle med død, selvmord, vold,
+# hatkriminalitet, seksuell orientering/kjønnsidentitet eller annen
+# tematikk som med rimelighet oppleves trist/sensitiv å bruke useriøst.
+# Dette er lag 1: et deterministisk, gratis nøkkelordfilter som alltid
+# kjører og ikke er avhengig av at Claude API er oppe (se lag 2,
+# vurder_datagrunnlag(), lenger ned — den gir en mer nyansert vurdering
+# på toppen, men denne lista er sikkerhetsgarantien uansett).
+# ---------------------------------------------------------------------------
+
+SENSITIVE_STIKKORD = [
+    # Død
+    "dø", "død", "dødsfall", "dødelighet", "avdød", "omkom", "drept", "bortgang",
+    # Selvmord / selvskading
+    "selvmord", "sjølvmord", "selvskading",
+    # Vold / overgrep
+    "vold", "voldtekt", "valdtekt", "overgrep", "mishandling", "incest",
+    # Hatkriminalitet / diskriminering
+    "hatkriminalitet", "hatprat", "diskriminering",
+    # Seksuell orientering / kjønnsidentitet
+    "homofil", "lesbisk", "bifil", "transperson", "transkjønn",
+    "transseksuell", "skeiv", "kjønnsidentitet", "seksuell legning",
+    "seksuell orientering",
+    # Alvorlig sykdom
+    "kreft", "uhelbredelig", "terminal", "dødssyk",
+    # Barn / omsorgssvikt
+    "barnemishandling", "omsorgssvikt",
+]
+
+
+def _er_sensitivt(tekst: str) -> bool:
+    """Sjekker om en tabelltittel/serienavn inneholder noe fra
+    SENSITIVE_STIKKORD. Bevisst delstreng- og overinkluderende — det er
+    tryggere å hoppe over en tabell for mye enn én for lite."""
+    t = (tekst or "").lower()
+    return any(ord in t for ord in SENSITIVE_STIKKORD)
+
+
+# ---------------------------------------------------------------------------
 # 3. TABELLSØK
 # ---------------------------------------------------------------------------
 
 def sok_tabeller(sokeord: str, pagesize: int = 5) -> list:
     """Søker etter tabeller for ett søkeord. Returnerer kun tabeller med en
     årlig (eller årlig-lignende) tidsdimensjon — måneds-/kvartalstabeller
-    filtreres bort siden vi bygger {år: verdi}-serier."""
+    filtreres bort siden vi bygger {år: verdi}-serier — og filtrerer bort
+    tabeller som treffer INNHOLDSFILTER-lista (se over)."""
     try:
         svar = _api_get("/tables", {
             "query": sokeord, "lang": "no", "pageSize": pagesize,
@@ -143,7 +184,10 @@ def sok_tabeller(sokeord: str, pagesize: int = 5) -> list:
     except (urllib.error.URLError, json.JSONDecodeError) as e:
         print(f"  Søk feilet for '{sokeord}': {e}")
         return []
-    return [t for t in svar.get("tables", []) if t.get("timeUnit") in ("Annual", "Other")]
+    return [
+        t for t in svar.get("tables", [])
+        if t.get("timeUnit") in ("Annual", "Other") and not _er_sensitivt(t.get("label", ""))
+    ]
 
 
 def bygg_kandidatliste() -> list:
@@ -263,7 +307,100 @@ def hent_alle_serier() -> list:
 
 
 # ---------------------------------------------------------------------------
-# 5. KORRELASJON
+# 5. INNHOLDSVURDERING, LAG 2 — Claude API vurderer datagrunnlaget
+#
+# Nøkkelordfilteret over (SENSITIVE_STIKKORD) er den harde garantien.
+# Dette laget er en mer nyansert vurdering på toppen — Claude ser hele
+# ukas kandidatliste under ett og flagger temaer nøkkelordlista ikke
+# tenkte på. Feiler kallet, faller vi tilbake til kun nøkkelordfilteret
+# (IKKE til å tillate alt) — se try/except i vurder_datagrunnlag().
+# ---------------------------------------------------------------------------
+
+DATAGRUNNLAG_SYSTEMPROMPT = (
+    "Du vurderer en liste med norske SSB-statistikkserier som skal brukes "
+    "til en useriøs humorside som lager tulle-korrelasjoner mellom "
+    "tilfeldige tall (à la Tyler Vigens spurious-correlations.com). Siden "
+    "skal bare tulle med lette, hverdagslige tema — som smørpriser, vær, "
+    "dyr, forbruk, sport og lignende. Den skal ALDRI brukes til å tulle "
+    "med: død, dødsfall eller dødelighet; selvmord eller selvskading; "
+    "vold, overgrep eller voldtekt; hatkriminalitet eller diskriminering; "
+    "seksuell orientering eller kjønnsidentitet (f.eks. homofile, "
+    "lesbiske, transpersoner) som tema; alvorlig eller uhelbredelig "
+    "sykdom; eller annen tematikk som med rimelighet kan oppleves trist, "
+    "sensitiv eller sårende å se brukt i en useriøs sammenheng.\n\n"
+    "For hver serie i lista under: vurder om navnet/temaet er trygt å "
+    "bruke (passer=true) eller bør utelukkes fordi det faller inn under "
+    "kategoriene over (passer=false). Vær på den forsiktige siden ved "
+    "tvil. Kopier 'navn'-feltet nøyaktig som gitt i input."
+)
+
+
+def vurder_datagrunnlag(serier: list) -> list:
+    """Ber Claude API vurdere hele lista med kandidatserier for uka samlet
+    (ett kall) mot sidens "trygt useriøst"-kriterier. Feiler kallet på noen
+    som helst måte (nettverk, kreditter, avvist svar, uventet svarformat)
+    fanges det bredt med vilje, og funksjonen returnerer serier UENDRET —
+    nøkkelordfilteret (SENSITIVE_STIKKORD) er allerede kjørt på hver serie
+    og er den reelle sikkerhetsgarantien, uavhengig av om dette mer
+    nyanserte laget lykkes denne uka."""
+    if not serier:
+        return serier
+    try:
+        import anthropic
+
+        client = anthropic.Anthropic()
+        liste_tekst = "\n".join(f"- {s['navn']}" for s in serier)
+        respons = client.messages.create(
+            model="claude-opus-5",
+            max_tokens=2000,
+            output_config={
+                "effort": "medium",  # reelle konsekvenser hvis vurderingen bommer
+                "format": {
+                    "type": "json_schema",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "vurderinger": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "navn": {"type": "string"},
+                                        "passer": {"type": "boolean"},
+                                    },
+                                    "required": ["navn", "passer"],
+                                    "additionalProperties": False,
+                                },
+                            }
+                        },
+                        "required": ["vurderinger"],
+                        "additionalProperties": False,
+                    },
+                },
+            },
+            system=DATAGRUNNLAG_SYSTEMPROMPT,
+            messages=[{"role": "user", "content": liste_tekst}],
+        )
+        if respons.stop_reason == "refusal":
+            raise RuntimeError("Claude avviste forespørselen")
+        tekst = next(b.text for b in respons.content if b.type == "text")
+        vurderinger = {v["navn"]: v["passer"] for v in json.loads(tekst)["vurderinger"]}
+
+        # Manglende navn i svaret (bør ikke skje, men) tolkes som "passer" —
+        # nøkkelordfilteret har uansett allerede sett på denne serien.
+        beholdt = [s for s in serier if vurderinger.get(s["navn"], True)]
+        forkastet = [s["navn"] for s in serier if not vurderinger.get(s["navn"], True)]
+        if forkastet:
+            print(f"  Claude-vurdering filtrerte bort: {', '.join(forkastet)}")
+        return beholdt
+    except Exception as e:
+        print(f"  Klarte ikke vurdere datagrunnlaget via Claude API ({e}) — "
+              f"stoler kun på nøkkelordfilteret denne uka.")
+        return serier
+
+
+# ---------------------------------------------------------------------------
+# 6. KORRELASJON
 # ---------------------------------------------------------------------------
 
 def pearson(x: list, y: list) -> float:
@@ -279,6 +416,11 @@ def finn_beste_par(serier: list, min_overlapp: int = 5) -> dict | None:
     for i in range(len(serier)):
         for j in range(i + 1, len(serier)):
             a, b = serier[i], serier[j]
+            # Forsvar-i-dybden: samme innholdsfilter som sok_tabeller(),
+            # i tilfelle en tabells auto-valgte totalkategori-navn
+            # avslører noe selve tabelltittelen ikke gjorde.
+            if _er_sensitivt(a["navn"]) or _er_sensitivt(b["navn"]):
+                continue
             felles_aar = sorted(set(a["data"]) & set(b["data"]))
             if len(felles_aar) < min_overlapp:
                 continue
@@ -300,7 +442,7 @@ def finn_beste_par(serier: list, min_overlapp: int = 5) -> dict | None:
 
 
 # ---------------------------------------------------------------------------
-# 6. TEKSTGENERERING (pseudo-vitenskapelig, norsk)
+# 7. TEKSTGENERERING (pseudo-vitenskapelig, norsk)
 #
 # Overskrift og ingress trekkes tilfeldig fra flere maler i stedet for én
 # fast setning, slik at ukentlige innlegg ikke ser ut som ren copy-paste
@@ -467,7 +609,7 @@ def lag_tekst(par: dict) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# 7. ARKIV — hver ukes side lagres permanent under arkiv/<år>/uke-<nn>.html,
+# 8. ARKIV — hver ukes side lagres permanent under arkiv/<år>/uke-<nn>.html,
 #    og alle sider (forsiden og hver arkivside) får en innebygd, kollapsbar
 #    meny som lenker til alle tidligere uker gruppert per år. Menyen bygges
 #    fra selve filtreet under arkiv/ (ingen egen manifest-fil å holde synk)
@@ -564,7 +706,7 @@ def oppdater_meny_i_eldre_filer(alle_innslag: list, unnta: set) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 8. HTML-GENERERING
+# 9. HTML-GENERERING
 #
 # Chart.js lastes fra en lokal fil (chart.umd.min.js, ligger ved siden av
 # index.html i repoet) i stedet for en CDN. Det er ikke bare for å unngå
@@ -665,13 +807,16 @@ def lag_html(par: dict, tekst: dict, denne_sti: str, meny_html: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 9. HOVEDPROGRAM
+# 10. HOVEDPROGRAM
 # ---------------------------------------------------------------------------
 
 def main():
     print("Søker etter tabeller hos SSB ...")
     serier = hent_alle_serier()
     print(f"Fikk {len(serier)} brukbare serier.")
+
+    serier = vurder_datagrunnlag(serier)
+    print(f"{len(serier)} serier igjen etter innholdsvurdering.")
 
     par = finn_beste_par(serier)
     if par is None:

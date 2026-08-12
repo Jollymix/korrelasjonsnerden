@@ -42,6 +42,26 @@ nøkkelen (eller `anthropic`-pakken, eller nettet svikter), faller
 scriptet automatisk tilbake til en liten bank med statisk tekst —
 kjøringen feiler aldri på grunn av dette.
 
+## Innholdsfilter
+
+Siden skal aldri tulle med død, selvmord/selvskading, vold/overgrep,
+hatkriminalitet, seksuell orientering/kjønnsidentitet, alvorlig sykdom
+eller annen tematikk som med rimelighet oppleves trist eller sensitiv.
+Dette håndheves i to lag:
+
+1. **Nøkkelordfilter** (`SENSITIVE_STIKKORD`/`_er_sensitivt()`) — kjører
+   alltid, uavhengig av Claude API, og filtrerer bort tabeller/serier/par
+   som treffer eksplisitte ord i disse kategoriene. Dette er den harde
+   garantien.
+2. **Claude API-vurdering** (`vurder_datagrunnlag()`) — ett samlet kall
+   som lar Claude vurdere hele ukas kandidatliste mer nyansert, og fanger
+   opp temaer nøkkelordlista ikke tenkte på (f.eks. "personer bosatt på
+   sykehjem" eller "mistet en pårørende i ulykke" — ingen sensitive
+   enkeltord, men åpenbart ikke noe å tulle useriøst med).
+
+Feiler Claude-kallet (nettverk, kreditter, avvist svar), faller scriptet
+tilbake til kun nøkkelordfilteret — **aldri** til å tillate alt.
+
 ## Kjøre lokalt
 
 ```bash

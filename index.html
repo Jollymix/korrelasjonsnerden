@@ -2,7 +2,7 @@
 <html lang="no">
 <head>
 <meta charset="UTF-8">
-<title>Ingen har spurt om dette, men tallene sier det likevel: Tilfeller av tyveri og skadeverk siste 12 måneder, etter type lovbrudd og tid på året, kjønn og tid (prosent) vs drepte eller skadde i trafikkulykker, etter alder, trafikantgruppe og politidistrikt</title>
+<title>Ingen har spurt om dette, men tallene sier det likevel: Etternavn brukt av 200 personer eller flere vs prosentvise bidrag av energi og næringsstoff frå selde matvarer</title>
 <script src="chart.umd.min.js"></script>
 <style>
   body { font-family: Georgia, serif; max-width: 700px; margin: 40px auto; padding: 0 20px; color: #222; }
@@ -22,13 +22,13 @@
 </head>
 <body>
   <p style="color:#888; font-size:0.85em;">Publisert 12.08.2026</p>
-  <!--ARKIV-MENY-START--><nav class="meny"><details open><summary>2026</summary><ul><li><a href="arkiv/2026/uke-33.html">Uke 33: Ingen har spurt om dette, men tallene sier det likevel: Tilfeller av tyveri og skadeverk siste 12 måneder, etter type lovbrudd og tid på året, kjønn og tid (prosent) vs drepte eller skadde i trafikkulykker, etter alder, trafikantgruppe og politidistrikt</a></li></ul></details></nav><!--ARKIV-MENY-END-->
-  <h1>Ingen har spurt om dette, men tallene sier det likevel: Tilfeller av tyveri og skadeverk siste 12 måneder, etter type lovbrudd og tid på året, kjønn og tid (prosent) vs drepte eller skadde i trafikkulykker, etter alder, trafikantgruppe og politidistrikt</h1>
-  <p class="ingress">Mellom 2001 og 2023 har tilfeller av tyveri og skadeverk siste 12 måneder, etter type lovbrudd og tid på året, kjønn og tid (prosent) og drepte eller skadde i trafikkulykker, etter alder, trafikantgruppe og politidistrikt beveget seg i motsatt retning med en påfallende sterk korrelasjon på r = -0.953. Kausalitet er verken hevdet eller undersøkt.</p>
+  <!--ARKIV-MENY-START--><nav class="meny"><details open><summary>2026</summary><ul><li><a href="arkiv/2026/uke-33.html">Uke 33: Ingen har spurt om dette, men tallene sier det likevel: Etternavn brukt av 200 personer eller flere vs prosentvise bidrag av energi og næringsstoff frå selde matvarer</a></li></ul></details></nav><!--ARKIV-MENY-END-->
+  <h1>Ingen har spurt om dette, men tallene sier det likevel: Etternavn brukt av 200 personer eller flere vs prosentvise bidrag av energi og næringsstoff frå selde matvarer</h1>
+  <p class="ingress">En gjennomgang av offisielle tall fra SSB for perioden 2018–2025 avdekker en svært sterk korrelasjonskoeffisient på r = -0.944 mellom etternavn brukt av 200 personer eller flere og prosentvise bidrag av energi og næringsstoff frå selde matvarer. Forskere er ikke kontaktet, og årsakssammenheng er verken undersøkt eller sannsynlig.</p>
   <canvas id="chart" height="280"></canvas>
   <div class="spekulasjon">
     <p class="spekulasjon-tittel">Nerden spekulerer:</p>
-    <p>Mekanismen er lite omdiskutabel: for hver trafikkulykke som ikke inntreffer, frigjøres et menneske med intakte bein og god tid, og statistikken viser med r = −0,953 hvor denne tiden havner. Over 23 år har sammenhengen holdt seg så stabil at vi trygt kan regne skadde i trafikken som samfunnets viktigste enkeltbidrag til å holde tyveri og skadeverk nede. En moderat, kontrollert økning i lettere trafikkulykker fremstår derfor som det mest kostnadseffektive kriminalitetsforebyggende tiltaket vi har tilgjengelig.</p>
+    <p>Med r = −0,944 er saken i praksis avgjort: hver gang nordmenn henter en større andel av energien sin fra de solgte matvarene, faller antallet etternavn som passerer 200 bærere. Mekanismen er neppe komplisert – navn krever plass i registeret, og næringsstoffene tar den plassen først. Skal vi bevare etternavnsmangfoldet fram mot 2030, bør kostholdets prosentbidrag holdes nede med minst ett prosentpoeng i året.</p>
   </div>
   <p class="disclaimer">
     Dette er ikke vitenskap. Dette er to linjer som tilfeldigvis ligner på hverandre. Denne siden genereres automatisk fra offentlige SSB-tall og
@@ -39,18 +39,18 @@
 new Chart(document.getElementById('chart'), {
   type: 'line',
   data: {
-    labels: [2001, 2004, 2007, 2012, 2015, 2018, 2023],
+    labels: [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],
     datasets: [
       {
-        label: 'Tilfeller av tyveri og skadeverk siste 12 måneder, etter type lovbrudd og tid på året, kjønn og tid (prosent)',
-        data: [17, 16, 16, 23, 22, 25, 26],
+        label: 'Etternavn brukt av 200 personer eller flere',
+        data: [640, 667, 685, 708, 732, 761, 792, 809],
         borderColor: '#2563eb',
         yAxisID: 'y',
         tension: 0.3,
       },
       {
-        label: 'Drepte eller skadde i trafikkulykker, etter alder, trafikantgruppe og politidistrikt',
-        data: [5664, 5899, 5963, 4176, 2743, 2462, 1962],
+        label: 'Prosentvise bidrag av energi og næringsstoff frå selde matvarer',
+        data: [25.6, 25.5, 25.1, 24.6, 24.9, 24.7, 24.2, 24.1],
         borderColor: '#dc2626',
         yAxisID: 'y1',
         tension: 0.3,
