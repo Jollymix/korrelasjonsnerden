@@ -1081,7 +1081,6 @@ HTML_MAL = """<!DOCTYPE html>
         <img src="{bilde_sti}" width="96" height="96" alt="Illustrasjon av en statistikknerd med lupe og et stolpediagram">
       </div>
       <div>
-        <p class="kicker">Analyse*</p>
         <h2 id="nerd-heading">Nerden spekulerer</h2>
         <p>{spekulasjon}</p>
       </div>
