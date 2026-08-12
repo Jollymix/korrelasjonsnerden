@@ -457,6 +457,65 @@ OVERSKRIFT_MALER = [
     "{a} og {b_liten} følger hverandre påfallende tett, viser fersk statistikk",
     "Ingen har spurt om dette, men tallene sier det likevel: {a} vs {b_liten}",
 ]
+# (Banken over er fallback hvis generer_overskrift() under feiler — den
+# er den primære kilden til overskrifter, og gir kortere, mer
+# "nyhetsaktige" titler enn de fulle setningene her.)
+
+OVERSKRIFT_SYSTEMPROMPT = (
+    "Du skriver en kort, nyhetsaktig overskrift til en norsk "
+    "tulle-korrelasjon-side (à la Tyler Vigens spurious-correlations.com). "
+    "Du får to variabler fra SSB-statistikk og korrelasjonen mellom dem.\n\n"
+    "Skriv ÉN kort overskrift (maks 8–10 ord) med tørr, absurd statistisk "
+    "selvsikkerhet — som en avisoverskrift, ikke en hel setning. La "
+    "korrelasjonens retning (positiv eller negativ) skinne naturlig "
+    "gjennom i formuleringen der det passer.\n\n"
+    "Eksempler på ønsket stil og lengde (ikke kopier disse, bruk dem kun "
+    "som forbilde for tone):\n"
+    "- Flere etternavn, større tettsteder\n"
+    "- Etternavn og tettstedsareal følger hverandre mistenkelig tett\n"
+    "- Jo flere etternavn, desto mer tettsted\n"
+    "- Nye tall: Etternavn kan forklare størrelsen på norske tettsteder\n"
+    "- SSB-tall avslører: Etternavn og tettsteder vokser hånd i hånd\n\n"
+    "Ikke forklar vitsen. Ikke bruk anførselstegn. Svar KUN med selve "
+    "overskriften, uten avsluttende punktum."
+)
+
+OVERSKRIFT_BRUKERMAL = (
+    "Variabel A: {a}\n"
+    "Variabel B: {b}\n"
+    "Retning: A {retning} B\n"
+    "Korrelasjon: r = {r:.3f} ({styrke})"
+)
+
+
+def generer_overskrift(felter: dict) -> str:
+    """Ber Claude API skrive en kort, nyhetsaktig overskrift for ukens
+    tall. Feiler aldri utad — enhver feil (manglende pakke/nøkkel,
+    nettverk, avvist svar, uventet langt/tomt svar) fanges bredt med
+    vilje, og faller tilbake til OVERSKRIFT_MALER-banken over."""
+    try:
+        import anthropic
+
+        client = anthropic.Anthropic()
+        respons = client.messages.create(
+            model="claude-opus-5",
+            max_tokens=100,
+            output_config={"effort": "low"},  # enkel kreativ tekstoppgave
+            system=OVERSKRIFT_SYSTEMPROMPT,
+            messages=[{"role": "user", "content": OVERSKRIFT_BRUKERMAL.format(**felter)}],
+        )
+        if respons.stop_reason == "refusal":
+            raise RuntimeError("Claude avviste forespørselen")
+        tekst = "".join(b.text for b in respons.content if b.type == "text").strip()
+        tekst = tekst.strip("\"'“”")
+        # Sikkerhetsnett hvis Claude ignorerer korthets-instruksen eller
+        # svarer med flere linjer — da er svaret ikke det vi ba om.
+        if not tekst or len(tekst) > 100 or "\n" in tekst:
+            raise RuntimeError(f"Uventet svar ({len(tekst)} tegn)")
+        return tekst
+    except Exception as e:
+        print(f"  Klarte ikke generere overskrift via Claude API ({e}) — bruker fallback-mal.")
+        return random.choice(OVERSKRIFT_MALER).format(**felter)
 
 INGRESS_MALER = [
     (
@@ -598,7 +657,7 @@ def lag_tekst(par: dict) -> dict:
         "styrke": styrke, "r": par["r"],
         "fra": par["aar"][0], "til": par["aar"][-1],
     }
-    overskrift = random.choice(OVERSKRIFT_MALER).format(**felter)
+    overskrift = generer_overskrift(felter)
     ingress = random.choice(INGRESS_MALER).format(**felter)
     kommentar = random.choice(KOMMENTAR_BANK)
     spekulasjon = generer_spekulasjon(felter)
@@ -670,7 +729,7 @@ def bygg_meny_html(alle_innslag: list, denne_sti: str) -> str:
 
     nyeste_aar = max(per_aar)
     gjeldende_aar = next((e["aar"] for e in alle_innslag if e["sti"] == denne_sti), None)
-    deler = ['<nav class="meny">']
+    deler = ['<nav class="meny"><p class="meny-tittel">Tidligere korrelasjoner</p>']
     for aar in sorted(per_aar, reverse=True):
         apen = " open" if aar in (nyeste_aar, gjeldende_aar) else ""
         deler.append(f"<details{apen}><summary>{aar}</summary><ul>")
@@ -724,36 +783,48 @@ HTML_MAL = """<!DOCTYPE html>
 <title>{tittel}</title>
 <script src="{chartjs_sti}"></script>
 <style>
-  body {{ font-family: Georgia, serif; max-width: 700px; margin: 40px auto; padding: 0 20px; color: #222; }}
+  body {{
+    font-family: Georgia, serif; color: #222;
+    display: flex; align-items: flex-start; gap: 32px;
+    max-width: 960px; margin: 40px auto; padding: 0 20px;
+  }}
   h1 {{ font-size: 1.6em; line-height: 1.3; }}
   .ingress {{ font-size: 1.1em; color: #444; }}
   .r-verdi {{ font-family: monospace; background: #f0f0f0; padding: 2px 6px; }}
   .disclaimer {{ margin-top: 40px; font-size: 0.85em; color: #888; border-top: 1px solid #ddd; padding-top: 12px; }}
   canvas {{ margin-top: 30px; }}
-  .meny {{ margin: 14px 0 26px; font-size: 0.9em; }}
+  main {{ flex: 1 1 auto; min-width: 0; max-width: 700px; }}
+  .meny {{ flex: 0 0 220px; position: sticky; top: 24px; font-size: 0.85em; }}
+  .meny-tittel {{ font-weight: bold; margin: 0 0 8px; }}
   .meny summary {{ cursor: pointer; color: #2563eb; }}
   .meny ul {{ list-style: none; padding-left: 16px; margin: 6px 0 10px; }}
   .meny li {{ margin: 3px 0; }}
   .meny .na {{ color: #888; font-style: italic; }}
   .spekulasjon {{ margin-top: 26px; padding: 14px 16px; background: #f7f5ef; border-left: 3px solid #999; }}
   .spekulasjon-tittel {{ font-weight: bold; margin: 0 0 6px; }}
+  @media (max-width: 860px) {{
+    body {{ flex-direction: column; }}
+    .meny {{ position: static; width: 100%; flex-basis: auto; }}
+  }}
 </style>
 </head>
 <body>
-  <p style="color:#888; font-size:0.85em;">Publisert {dato}</p>
   <!--ARKIV-MENY-START-->{meny}<!--ARKIV-MENY-END-->
-  <h1>{tittel}</h1>
-  <p class="ingress">{ingress}</p>
-  <canvas id="chart" height="280"></canvas>
-  <div class="spekulasjon">
-    <p class="spekulasjon-tittel">Nerden spekulerer:</p>
-    <p>{spekulasjon}</p>
-  </div>
-  <p class="disclaimer">
-    {kommentar} Denne siden genereres automatisk fra offentlige SSB-tall og
-    er ment som underholdning. Korrelasjon er ikke kausalitet — det er
-    faktisk hele poenget med siden.
-  </p>
+  <main>
+    <p style="color:#888; font-size:0.85em;">Publisert {dato}</p>
+    <h1>{tittel}</h1>
+    <p class="ingress">{ingress}</p>
+    <canvas id="chart" height="280"></canvas>
+    <div class="spekulasjon">
+      <p class="spekulasjon-tittel">Nerden spekulerer:</p>
+      <p>{spekulasjon}</p>
+    </div>
+    <p class="disclaimer">
+      {kommentar} Denne siden genereres automatisk fra offentlige SSB-tall og
+      er ment som underholdning. Korrelasjon er ikke kausalitet — det er
+      faktisk hele poenget med siden.
+    </p>
+  </main>
 <script>
 new Chart(document.getElementById('chart'), {{
   type: 'line',

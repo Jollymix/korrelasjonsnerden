@@ -2,39 +2,51 @@
 <html lang="no">
 <head>
 <meta charset="UTF-8">
-<title>Etternavn brukt av 200 personer eller flere og arealbruk i tettsteder, per kommune (km²) følger hverandre påfallende tett, viser fersk statistikk</title>
+<title>Nye tall: Hvert nytt etternavn gir mer tettsted</title>
 <script src="chart.umd.min.js"></script>
 <style>
-  body { font-family: Georgia, serif; max-width: 700px; margin: 40px auto; padding: 0 20px; color: #222; }
+  body {
+    font-family: Georgia, serif; color: #222;
+    display: flex; align-items: flex-start; gap: 32px;
+    max-width: 960px; margin: 40px auto; padding: 0 20px;
+  }
   h1 { font-size: 1.6em; line-height: 1.3; }
   .ingress { font-size: 1.1em; color: #444; }
   .r-verdi { font-family: monospace; background: #f0f0f0; padding: 2px 6px; }
   .disclaimer { margin-top: 40px; font-size: 0.85em; color: #888; border-top: 1px solid #ddd; padding-top: 12px; }
   canvas { margin-top: 30px; }
-  .meny { margin: 14px 0 26px; font-size: 0.9em; }
+  main { flex: 1 1 auto; min-width: 0; max-width: 700px; }
+  .meny { flex: 0 0 220px; position: sticky; top: 24px; font-size: 0.85em; }
+  .meny-tittel { font-weight: bold; margin: 0 0 8px; }
   .meny summary { cursor: pointer; color: #2563eb; }
   .meny ul { list-style: none; padding-left: 16px; margin: 6px 0 10px; }
   .meny li { margin: 3px 0; }
   .meny .na { color: #888; font-style: italic; }
   .spekulasjon { margin-top: 26px; padding: 14px 16px; background: #f7f5ef; border-left: 3px solid #999; }
   .spekulasjon-tittel { font-weight: bold; margin: 0 0 6px; }
+  @media (max-width: 860px) {
+    body { flex-direction: column; }
+    .meny { position: static; width: 100%; flex-basis: auto; }
+  }
 </style>
 </head>
 <body>
-  <p style="color:#888; font-size:0.85em;">Publisert 12.08.2026</p>
-  <!--ARKIV-MENY-START--><nav class="meny"><details open><summary>2026</summary><ul><li><a href="arkiv/2026/uke-33.html">Uke 33: Etternavn brukt av 200 personer eller flere og arealbruk i tettsteder, per kommune (km²) følger hverandre påfallende tett, viser fersk statistikk</a></li></ul></details></nav><!--ARKIV-MENY-END-->
-  <h1>Etternavn brukt av 200 personer eller flere og arealbruk i tettsteder, per kommune (km²) følger hverandre påfallende tett, viser fersk statistikk</h1>
-  <p class="ingress">Det er ingen kjent grunn til at etternavn brukt av 200 personer eller flere og arealbruk i tettsteder, per kommune (km²) skulle ha noe med hverandre å gjøre. Likevel viser SSB-tall for 2018–2025 en påfallende sterk korrelasjon på r = 0.996.</p>
-  <canvas id="chart" height="280"></canvas>
-  <div class="spekulasjon">
-    <p class="spekulasjon-tittel">Nerden spekulerer:</p>
-    <p>Med r = 0.996 over åtte årganger er saken i praksis avgjort: hvert nytt etternavn som passerer 200 bærere, utløser en målbar utvidelse av tettstedsarealet. Mekanismen er trivielt logisk — folk med samme etternavn må bo et sted, og de bor ikke oppå hverandre. Kommuner med presset arealregnskap bør derfor vurdere å innføre en midlertidig stans i navneendringer inntil boligreserven er brakt i balanse.</p>
-  </div>
-  <p class="disclaimer">
-    Dette er ikke vitenskap. Dette er to linjer som tilfeldigvis ligner på hverandre. Denne siden genereres automatisk fra offentlige SSB-tall og
-    er ment som underholdning. Korrelasjon er ikke kausalitet — det er
-    faktisk hele poenget med siden.
-  </p>
+  <!--ARKIV-MENY-START--><nav class="meny"><p class="meny-tittel">Tidligere korrelasjoner</p><details open><summary>2026</summary><ul><li><a href="arkiv/2026/uke-33.html">Uke 33: Nye tall: Hvert nytt etternavn gir mer tettsted</a></li></ul></details></nav><!--ARKIV-MENY-END-->
+  <main>
+    <p style="color:#888; font-size:0.85em;">Publisert 12.08.2026</p>
+    <h1>Nye tall: Hvert nytt etternavn gir mer tettsted</h1>
+    <p class="ingress">Mellom 2018 og 2025 har arealbruk i tettsteder, per kommune (km²) og etternavn brukt av 200 personer eller flere beveget seg i samme retning med en påfallende sterk korrelasjon på r = 0.996. Kausalitet er verken hevdet eller undersøkt.</p>
+    <canvas id="chart" height="280"></canvas>
+    <div class="spekulasjon">
+      <p class="spekulasjon-tittel">Nerden spekulerer:</p>
+      <p>Sammenhengen er nesten uforstyrret av støy: for hver kvadratkilometer tettsted som legges til, følger et nytt etternavn opp over 200-grensen. Mekanismen er triviell — større tettsteder gir flere naboer å dele slektsnavn med — og med r = 0,996 over åtte årganger er det vanskelig å tenke seg noe annet. Kommuner som ønsker større navnemangfold i egen befolkning, bør derfor prioritere regulering av nye tettstedsarealer framfor tilflyttingskampanjer.</p>
+    </div>
+    <p class="disclaimer">
+      Ingen årsakssammenheng er antydet, foreslått, eller ønsket. Denne siden genereres automatisk fra offentlige SSB-tall og
+      er ment som underholdning. Korrelasjon er ikke kausalitet — det er
+      faktisk hele poenget med siden.
+    </p>
+  </main>
 <script>
 new Chart(document.getElementById('chart'), {
   type: 'line',
@@ -42,15 +54,15 @@ new Chart(document.getElementById('chart'), {
     labels: [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],
     datasets: [
       {
-        label: 'Etternavn brukt av 200 personer eller flere',
-        data: [640, 667, 685, 708, 732, 761, 792, 809],
+        label: 'Arealbruk i tettsteder, per kommune (km²)',
+        data: [881.17, 883.58, 886.48, 889.07, 891.31, 897.06, 901.08, 902.89],
         borderColor: '#2563eb',
         yAxisID: 'y',
         tension: 0.3,
       },
       {
-        label: 'Arealbruk i tettsteder, per kommune (km²)',
-        data: [881.17, 883.58, 886.48, 889.07, 891.31, 897.06, 901.08, 902.89],
+        label: 'Etternavn brukt av 200 personer eller flere',
+        data: [640, 667, 685, 708, 732, 761, 792, 809],
         borderColor: '#dc2626',
         yAxisID: 'y1',
         tension: 0.3,
