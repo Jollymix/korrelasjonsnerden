@@ -2,7 +2,7 @@
 <html lang="no">
 <head>
 <meta charset="UTF-8">
-<title>Nye tall: Hvert nytt etternavn gir mer tettsted</title>
+<title>Dyrere Norge, færre elg: prisveksten feller elgstammen</title>
 <script src="chart.umd.min.js"></script>
 <style>
   body {
@@ -31,15 +31,15 @@
 </style>
 </head>
 <body>
-  <!--ARKIV-MENY-START--><nav class="meny"><p class="meny-tittel">Tidligere korrelasjoner</p><details open><summary>2026</summary><ul><li><a href="arkiv/2026/uke-33.html">Uke 33: Nye tall: Hvert nytt etternavn gir mer tettsted</a></li></ul></details></nav><!--ARKIV-MENY-END-->
+  <!--ARKIV-MENY-START--><nav class="meny"><p class="meny-tittel">Tidligere korrelasjoner</p><details open><summary>2026</summary><ul><li><a href="arkiv/2026/uke-33.html">Uke 33: Dyrere Norge, færre elg: prisveksten feller elgstammen</a></li></ul></details></nav><!--ARKIV-MENY-END-->
   <main>
     <p style="color:#888; font-size:0.85em;">Publisert 12.08.2026</p>
-    <h1>Nye tall: Hvert nytt etternavn gir mer tettsted</h1>
-    <p class="ingress">Mellom 2018 og 2025 har arealbruk i tettsteder, per kommune (km²) og etternavn brukt av 200 personer eller flere beveget seg i samme retning med en påfallende sterk korrelasjon på r = 0.996. Kausalitet er verken hevdet eller undersøkt.</p>
+    <h1>Dyrere Norge, færre elg: prisveksten feller elgstammen</h1>
+    <p class="ingress">Mellom 2000 og 2025 har felte elg og konsumprisindeks (kpi), etter vare- og tjenestegruppe (2025=100) beveget seg i motsatt retning med en påfallende sterk korrelasjon på r = -0.965. Kausalitet er verken hevdet eller undersøkt.</p>
     <canvas id="chart" height="280"></canvas>
     <div class="spekulasjon">
       <p class="spekulasjon-tittel">Nerden spekulerer:</p>
-      <p>Sammenhengen er nesten uforstyrret av støy: for hver kvadratkilometer tettsted som legges til, følger et nytt etternavn opp over 200-grensen. Mekanismen er triviell — større tettsteder gir flere naboer å dele slektsnavn med — og med r = 0,996 over åtte årganger er det vanskelig å tenke seg noe annet. Kommuner som ønsker større navnemangfold i egen befolkning, bør derfor prioritere regulering av nye tettstedsarealer framfor tilflyttingskampanjer.</p>
+      <p>Med r = −0,965 er saken i praksis avgjort: hver elg som felles, trekker prisnivået målbart nedover, og de siste tjue årenes avtakende jaktuttak forklarer dermed brorparten av inflasjonen i norsk økonomi. Renten er et forholdsvis grovt instrument sammenlignet med elgkvoten, som virker direkte på vare- og tjenestegruppene uten forsinkelse. Norges Bank bør derfor vurdere å overlate pengepolitikken til de kommunale viltnemndene.</p>
     </div>
     <p class="disclaimer">
       Ingen årsakssammenheng er antydet, foreslått, eller ønsket. Denne siden genereres automatisk fra offentlige SSB-tall og
@@ -51,18 +51,18 @@
 new Chart(document.getElementById('chart'), {
   type: 'line',
   data: {
-    labels: [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],
+    labels: [2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],
     datasets: [
       {
-        label: 'Arealbruk i tettsteder, per kommune (km²)',
-        data: [881.17, 883.58, 886.48, 889.07, 891.31, 897.06, 901.08, 902.89],
+        label: 'Felte elg',
+        data: [38000, 37300, 37892, 38564, 36770, 36026, 34978, 35657, 35620, 35971, 36409, 36435, 34643, 34956, 33199, 31136, 30835, 31611, 30666, 30319, 31766, 29278, 27487, 26003, 26384, 26609],
         borderColor: '#2563eb',
         yAxisID: 'y',
         tension: 0.3,
       },
       {
-        label: 'Etternavn brukt av 200 personer eller flere',
-        data: [640, 667, 685, 708, 732, 761, 792, 809],
+        label: 'Konsumprisindeks (KPI), etter vare- og tjenestegruppe (2025=100)',
+        data: [54.8, 56.4, 57.2, 58.6, 58.9, 59.7, 61.1, 61.6, 63.9, 65.3, 66.9, 67.7, 68.2, 69.6, 71.1, 72.6, 75.2, 76.6, 78.7, 80.4, 81.5, 84.3, 89.2, 94.1, 97.1, 100],
         borderColor: '#dc2626',
         yAxisID: 'y1',
         tension: 0.3,
