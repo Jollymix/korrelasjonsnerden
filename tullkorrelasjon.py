@@ -661,9 +661,15 @@ def lag_tekst(par: dict) -> dict:
     ingress = random.choice(INGRESS_MALER).format(**felter)
     kommentar = random.choice(KOMMENTAR_BANK)
     spekulasjon = generer_spekulasjon(felter)
+    # Bildeteksten under grafen: den ukentlig varierte "kommentar"-frasen
+    # (KOMMENTAR_BANK) + en fast periode-opplysning. Selve disclaimer-
+    # boksen lenger ned bruker derimot alltid samme faste ordlyd (se
+    # HTML_MAL) — det er en av tekstene som skal stå uendret på siden.
+    chart_note = f"{kommentar} Årlige tall, {felter['fra']}–{felter['til']}."
     return {
         "overskrift": overskrift, "ingress": ingress,
-        "kommentar": kommentar, "spekulasjon": spekulasjon,
+        "kommentar": kommentar, "chart_note": chart_note,
+        "spekulasjon": spekulasjon,
     }
 
 
@@ -677,8 +683,14 @@ def lag_tekst(par: dict) -> dict:
 
 ARKIV_ROT = pathlib.Path("arkiv")
 TITTEL_MONSTER = re.compile(r"<title>(.*?)</title>", re.DOTALL)
-MENY_MONSTER = re.compile(
-    r"<!--ARKIV-MENY-START-->.*?<!--ARKIV-MENY-END-->", re.DOTALL
+# To separate menyblokker (mobil/desktop, se bygg_arkiv_blokker) — hver med
+# sitt eget markørpar, siden de ligger på hvert sitt sted i HTML_MAL og
+# derfor må kunne byttes ut hver for seg i oppdater_meny_i_eldre_filer().
+MENY_MOBIL_MONSTER = re.compile(
+    r"<!--ARKIV-MENY-MOBIL-START-->.*?<!--ARKIV-MENY-MOBIL-END-->", re.DOTALL
+)
+MENY_DESKTOP_MONSTER = re.compile(
+    r"<!--ARKIV-MENY-DESKTOP-START-->.*?<!--ARKIV-MENY-DESKTOP-END-->", re.DOTALL
 )
 
 
@@ -699,7 +711,7 @@ def finn_alle_innslag() -> list:
             treff = TITTEL_MONSTER.search(fil.read_text(encoding="utf-8"))
             # <title> i filen er allerede HTML-escaped ved skriving — hent
             # ut ren tekst her, så vi ikke escaper to ganger når menyen
-            # bygges (se bygg_meny_html).
+            # bygges (se bygg_arkiv_blokker/_bygg_arkiv_liste).
             tittel = html.unescape(treff.group(1)) if treff else fil.stem
             innslag.append({
                 "aar": int(fil.parent.name),
@@ -717,9 +729,12 @@ def relativ_lenke(til_sti: str, fra_fil: str) -> str:
     return posixpath.relpath(til_sti, fra_katalog)
 
 
-def bygg_meny_html(alle_innslag: list, denne_sti: str) -> str:
-    """Genererer en kollapsbar <details>-meny gruppert per år (nyeste
-    år/uke øverst). Gjeldende side vises som ren tekst, ikke lenke."""
+def _bygg_arkiv_liste(alle_innslag: list, denne_sti: str) -> str:
+    """Bygger selve år→uke-lista (uten ytre wrapper) som gjenbrukes både i
+    mobil- og desktop-arkivblokka, gruppert per år (nyeste år/uke øverst).
+    Gjeldende side vises som ren tekst, ikke lenke. Årene er kollapsbare
+    <details>-grupper (nyeste år åpent) — praktisk når arkivet vokser seg
+    langt utover ett år med ukentlige innlegg."""
     if not alle_innslag:
         return ""
 
@@ -729,24 +744,58 @@ def bygg_meny_html(alle_innslag: list, denne_sti: str) -> str:
 
     nyeste_aar = max(per_aar)
     gjeldende_aar = next((e["aar"] for e in alle_innslag if e["sti"] == denne_sti), None)
-    deler = ['<nav class="meny"><p class="meny-tittel">Tidligere korrelasjoner</p>']
+    deler = []
     for aar in sorted(per_aar, reverse=True):
         apen = " open" if aar in (nyeste_aar, gjeldende_aar) else ""
-        deler.append(f"<details{apen}><summary>{aar}</summary><ul>")
+        deler.append(f'<details class="archive-year-group"{apen}>'
+                      f'<summary class="archive-year">{aar}</summary><ul>')
         for e in per_aar[aar]:
             tittel = html.escape(e["tittel"])
             if e["sti"] == denne_sti:
-                deler.append(f'<li class="na">Uke {e["uke"]}: {tittel}</li>')
+                deler.append(
+                    f'<li class="archive-link na" aria-current="page">'
+                    f'<i aria-hidden="true"></i><span><small>Uke {e["uke"]}</small>'
+                    f"{tittel}</span></li>"
+                )
             else:
                 lenke = relativ_lenke(e["sti"], denne_sti)
-                deler.append(f'<li><a href="{lenke}">Uke {e["uke"]}: {tittel}</a></li>')
+                deler.append(
+                    f'<li><a class="archive-link" href="{lenke}">'
+                    f'<i aria-hidden="true"></i><span><small>Uke {e["uke"]}</small>'
+                    f"{tittel}</span></a></li>"
+                )
         deler.append("</ul></details>")
-    deler.append("</nav>")
     return "".join(deler)
 
 
+def bygg_arkiv_blokker(alle_innslag: list, denne_sti: str) -> tuple:
+    """Returnerer (mobil_html, desktop_html) — to selvstendige menyblokker
+    med samme innhold (samme lenkeliste), men ulik ytre struktur:
+    - mobil: ett sammenleggbart <details>-element rett under toppfeltet
+      (skjules over 800px bredde, se styles.css/CSS-en i HTML_MAL).
+    - desktop: en sticky <aside> i venstre kolonne (skjules under 800px).
+    Begge er pakket inn i sine egne HTML-kommentarmarkører slik at
+    oppdater_meny_i_eldre_filer() kan bytte dem ut hver for seg i
+    allerede skrevne arkivsider."""
+    innhold = _bygg_arkiv_liste(alle_innslag, denne_sti)
+    mobil = (
+        "<!--ARKIV-MENY-MOBIL-START-->"
+        '<details class="mobile-archive"><summary>Tidligere korrelasjoner</summary>'
+        f"{innhold}</details>"
+        "<!--ARKIV-MENY-MOBIL-END-->"
+    )
+    desktop = (
+        "<!--ARKIV-MENY-DESKTOP-START-->"
+        '<aside class="archive-card" id="arkiv" aria-labelledby="archive-title">'
+        '<h2 id="archive-title">Tidligere korrelasjoner</h2>'
+        f"{innhold}</aside>"
+        "<!--ARKIV-MENY-DESKTOP-END-->"
+    )
+    return mobil, desktop
+
+
 def oppdater_meny_i_eldre_filer(alle_innslag: list, unnta: set) -> None:
-    """Bytter ut menyblokken i hver eksisterende side (unntatt de som
+    """Bytter ut menyblokkene i hver eksisterende side (unntatt de som
     skrives fullt ut denne kjøringen) slik at gamle sider også lenker til
     ukens nye side — ellers ville menyen deres fryse på generasjonstidspunktet."""
     for e in alle_innslag:
@@ -754,18 +803,23 @@ def oppdater_meny_i_eldre_filer(alle_innslag: list, unnta: set) -> None:
             continue
         fil = pathlib.Path(e["sti"])
         innhold = fil.read_text(encoding="utf-8")
-        ny_meny = (
-            "<!--ARKIV-MENY-START-->"
-            + bygg_meny_html(alle_innslag, e["sti"])
-            + "<!--ARKIV-MENY-END-->"
-        )
-        oppdatert = MENY_MONSTER.sub(lambda _: ny_meny, innhold, count=1)
+        ny_mobil, ny_desktop = bygg_arkiv_blokker(alle_innslag, e["sti"])
+        oppdatert = MENY_MOBIL_MONSTER.sub(lambda _: ny_mobil, innhold, count=1)
+        oppdatert = MENY_DESKTOP_MONSTER.sub(lambda _: ny_desktop, oppdatert, count=1)
         if oppdatert != innhold:
             fil.write_text(oppdatert, encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
 # 9. HTML-GENERERING
+#
+# Design: skandinavisk nettmagasin-uttrykk (varm papirbakgrunn, mørk
+# marineblå toppfelt, hvite kort, Georgia-serif for overskrifter/brødtekst,
+# system-sans for grensesnittekst) — se designreferansen
+# korrelasjonsnerden-redesign/ (index.html + styles.css) som dette bygger
+# på. Alt er fortsatt ett selvstendig, avhengighetsfritt HTML-dokument
+# (samme prinsipp som før: ingen eksterne fonter/CDN-er), kun CSS/HTML-
+# strukturen og Chart.js-oppsettet er nytt.
 #
 # Chart.js lastes fra en lokal fil (chart.umd.min.js, ligger ved siden av
 # index.html i repoet) i stedet for en CDN. Det er ikke bare for å unngå
@@ -774,57 +828,279 @@ def oppdater_meny_i_eldre_filer(alle_innslag: list, unnta: set) -> None:
 # nettleseren som skulle vise en lokalt åpnet index.html (net::ERR_NAME_NOT_RESOLVED),
 # noe som gjorde grafen usynlig. Se scripts/hent_chartjs.py for hvordan
 # filen ble hentet ned.
+#
+# nerden-spekulerer.png (assets/) er et vendoret, transparent PNG-ikon —
+# samme "ikke last eksterne ressurser"-prinsipp som Chart.js-filen.
 # ---------------------------------------------------------------------------
 
 HTML_MAL = """<!DOCTYPE html>
 <html lang="no">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Påfallende sammenhenger i offentlig SSB-statistikk, presentert med urimelig stor selvtillit.">
 <title>{tittel}</title>
 <script src="{chartjs_sti}"></script>
 <style>
-  body {{
-    font-family: Georgia, serif; color: #222;
-    display: flex; align-items: flex-start; gap: 32px;
-    max-width: 960px; margin: 40px auto; padding: 0 20px;
+  :root {{
+    --ink: #15243a; --deep: #0b1c30; --paper: #f7f4ee; --card: #fffefb;
+    --line: #dedbd3; --muted: #6d7480;
+    --blue: #2d65c8; --red: #d84a43;
+    --yellow: #f3e7b3; --yellow-line: #dbc976;
   }}
-  h1 {{ font-size: 1.6em; line-height: 1.3; }}
-  .ingress {{ font-size: 1.1em; color: #444; }}
-  .r-verdi {{ font-family: monospace; background: #f0f0f0; padding: 2px 6px; }}
-  .disclaimer {{ margin-top: 40px; font-size: 0.85em; color: #888; border-top: 1px solid #ddd; padding-top: 12px; }}
-  canvas {{ margin-top: 30px; }}
-  main {{ flex: 1 1 auto; min-width: 0; max-width: 700px; }}
-  .meny {{ flex: 0 0 220px; position: sticky; top: 24px; font-size: 0.85em; }}
-  .meny-tittel {{ font-weight: bold; margin: 0 0 8px; }}
-  .meny summary {{ cursor: pointer; color: #2563eb; }}
-  .meny ul {{ list-style: none; padding-left: 16px; margin: 6px 0 10px; }}
-  .meny li {{ margin: 3px 0; }}
-  .meny .na {{ color: #888; font-style: italic; }}
-  .spekulasjon {{ margin-top: 26px; padding: 14px 16px; background: #f7f5ef; border-left: 3px solid #999; }}
-  .spekulasjon-tittel {{ font-weight: bold; margin: 0 0 6px; }}
-  @media (max-width: 860px) {{
-    body {{ flex-direction: column; }}
-    .meny {{ position: static; width: 100%; flex-basis: auto; }}
+  * {{ box-sizing: border-box; }}
+  html {{ scroll-behavior: smooth; scroll-padding-top: 90px; }}
+  body {{
+    margin: 0; background: var(--paper); color: var(--ink);
+    font: 16px/1.6 Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }}
+  a {{ color: inherit; }}
+  a:focus-visible, summary:focus-visible, .chart-scroll:focus-visible {{
+    outline: 3px solid rgba(45, 101, 200, 0.45); outline-offset: 3px;
+  }}
+
+  .site-header {{
+    position: sticky; top: 0; z-index: 20;
+    display: flex; align-items: center; justify-content: space-between;
+    min-height: 70px; padding: 0 32px; color: #fff;
+    background: rgba(11, 28, 48, 0.98); border-bottom: 1px solid rgba(255,255,255,0.12);
+  }}
+  .wordmark {{
+    color: #fff; font: 700 clamp(1.15rem, 2vw, 1.45rem)/1 Georgia, "Times New Roman", serif;
+    letter-spacing: 0.025em; text-decoration: none;
+  }}
+  .wordmark span {{ color: #f1d769; }}
+  .site-header nav {{ display: flex; gap: 32px; font-size: 0.94rem; }}
+  .site-header nav a {{ color: rgba(255,255,255,0.76); text-decoration: none; }}
+  .site-header nav a:hover, .site-header nav a:focus-visible {{ color: #fff; }}
+
+  .page-shell {{
+    display: grid; grid-template-columns: minmax(220px, 292px) minmax(0, 1fr);
+    gap: clamp(30px, 4vw, 68px); width: min(1480px, calc(100% - 48px));
+    margin: auto; padding: 42px 0 76px;
+  }}
+  .archive-card {{
+    position: sticky; top: 112px; align-self: start; min-height: 0;
+    padding: 25px 24px; background: rgba(255,254,251,0.82);
+    border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: 0 8px 30px rgba(21,36,58,0.04);
+  }}
+  .archive-card h2 {{ margin: 0 0 14px; font: 700 1.05rem/1.25 Georgia, "Times New Roman", serif; }}
+  .mobile-archive summary {{ margin: 0; font: 700 1.05rem/1.25 Georgia, "Times New Roman", serif; }}
+  .archive-year-group {{ margin: 0 0 6px; }}
+  .archive-year-group summary {{
+    padding: 2px 0 9px; color: #174eae; font-size: 0.92rem; font-weight: 700;
+    list-style: none; cursor: pointer;
+  }}
+  .archive-year-group summary::-webkit-details-marker {{ display: none; }}
+  .archive-year-group summary::before {{ content: "▾ "; }}
+  .archive-year-group[open] summary::before {{ content: "▴ "; }}
+  .archive-year-group ul {{ list-style: none; margin: 0; padding: 0; }}
+  .archive-link {{
+    display: grid; grid-template-columns: 8px 1fr; align-items: start; gap: 10px;
+    padding: 9px 9px 10px 5px; border-radius: 9px;
+    font: 400 0.91rem/1.4 Georgia, "Times New Roman", serif; text-decoration: none;
+  }}
+  a.archive-link:hover, a.archive-link:focus-visible {{ background: #eef2f8; outline: none; }}
+  .archive-link.na {{ color: var(--muted); font-style: italic; }}
+  .archive-link i {{ width: 6px; height: 6px; margin-top: 8px; background: var(--blue); border-radius: 50%; }}
+  .archive-link small {{
+    display: block; margin-bottom: 2px; color: #174eae;
+    font: 800 0.68rem/1.4 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase;
+  }}
+  .archive-link.na small {{ color: var(--muted); }}
+  .mobile-archive {{ display: none; }}
+  article {{ min-width: 0; }}
+
+  .eyebrow, .kicker, .stat small {{
+    margin: 0; color: var(--muted); font-size: 0.7rem; font-weight: 800;
+    letter-spacing: 0.145em; text-transform: uppercase;
+  }}
+  .article-header {{ max-width: 1050px; }}
+  h1 {{
+    max-width: 980px; margin: 9px 0 14px; color: var(--deep);
+    font: 700 clamp(2.2rem, 4.3vw, 3.6rem)/1.08 Georgia, "Times New Roman", serif;
+    letter-spacing: -0.03em;
+  }}
+  .lead {{
+    max-width: 1050px; margin: 0; color: #374356;
+    font: 400 clamp(1.1rem, 1.7vw, 1.35rem)/1.5 Georgia, "Times New Roman", serif;
+  }}
+
+  .stat-grid {{
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;
+    max-width: 720px; margin: 28px 0 18px;
+  }}
+  .stat {{
+    padding: 15px 18px 16px; background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; box-shadow: 0 5px 14px rgba(21,36,58,0.05);
+  }}
+  .stat small {{ display: block; }}
+  .stat strong {{
+    display: block; margin-top: 2px; color: var(--deep);
+    font: 700 1.12rem/1.25 Georgia, "Times New Roman", serif;
+  }}
+
+  .chart-card {{
+    padding: clamp(20px, 2.8vw, 34px); background: var(--card);
+    border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: 0 18px 44px rgba(21,36,58,0.08);
+  }}
+  .chart-header {{ display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 22px; }}
+  .chart-header h2 {{ margin: 3px 0 0; color: var(--deep); font: 700 clamp(1.2rem, 2.1vw, 1.55rem)/1.18 Georgia, "Times New Roman", serif; }}
+  .legend {{ display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px 18px; color: #4d5868; font-size: 0.76rem; white-space: nowrap; }}
+  .legend span {{ display: inline-flex; align-items: center; gap: 7px; }}
+  .legend i {{ width: 26px; height: 3px; border-radius: 3px; }}
+  .legend .blue {{ background: var(--blue); }}
+  .legend .red {{ background: var(--red); }}
+  .chart-scroll {{ width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: thin; }}
+  .chart-inner {{ position: relative; min-width: 680px; height: 380px; }}
+  .chart-inner canvas {{ width: 100% !important; height: 100% !important; }}
+  .chart-note {{ margin: 10px 0 0; color: var(--muted); font-size: 0.75rem; }}
+
+  .nerd-callout {{
+    display: grid; grid-template-columns: 96px minmax(0, 1fr); align-items: center;
+    gap: clamp(20px, 3vw, 34px); margin-top: 18px; padding: clamp(22px, 3vw, 34px);
+    background: var(--yellow); border: 1px solid var(--yellow-line); border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(98,79,10,0.08);
+  }}
+  .nerd-image {{
+    display: grid; place-items: center; width: 96px; height: 96px; padding: 8px;
+    background: rgba(255,255,255,0.3); border: 2px solid var(--ink); border-radius: 50%;
+  }}
+  .nerd-image img {{ display: block; width: 100%; height: 100%; object-fit: contain; }}
+  .nerd-callout h2 {{ margin: 3px 0 0; color: var(--deep); font: 700 clamp(1.2rem, 2.1vw, 1.5rem)/1.18 Georgia, "Times New Roman", serif; }}
+  .nerd-callout div > p:last-child {{
+    margin: 8px 0 0; color: #253247;
+    font: 400 clamp(1rem, 1.35vw, 1.12rem)/1.55 Georgia, "Times New Roman", serif;
+  }}
+
+  .disclaimer {{
+    display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 16px;
+    margin-top: 18px; padding: 24px 12px 25px; color: var(--muted);
+    border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  }}
+  .disclaimer > span {{
+    display: grid; place-items: center; width: 30px; height: 30px;
+    border: 1.5px solid #a6abb2; border-radius: 50%;
+    font: 700 1.05rem Georgia, "Times New Roman", serif;
+  }}
+  .disclaimer p {{ max-width: 960px; margin: 0; font: 400 0.98rem/1.55 Georgia, "Times New Roman", serif; }}
+  footer {{
+    display: flex; flex-wrap: wrap; gap: 8px 13px; padding: 21px 2px 0;
+    color: var(--muted); font: 400 0.88rem Georgia, "Times New Roman", serif;
+  }}
+  footer b {{ font-weight: 400; }}
+
+  @media (max-width: 1040px) {{
+    .page-shell {{ grid-template-columns: 220px minmax(0, 1fr); gap: 28px; }}
+    .chart-header {{ align-items: start; flex-direction: column; }}
+    .legend {{ justify-content: flex-start; }}
+  }}
+  @media (max-width: 800px) {{
+    .site-header {{ min-height: 62px; padding: 0 20px; }}
+    .site-header nav {{ gap: 18px; font-size: 0.82rem; }}
+    .site-header nav a:nth-child(2) {{ display: none; }}
+    .mobile-archive {{
+      display: block; margin: 18px 18px 0; padding: 0 16px 12px;
+      background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    }}
+    .mobile-archive summary {{ margin: 0 -16px; padding: 14px 16px; cursor: pointer; }}
+    .mobile-archive summary::-webkit-details-marker {{ display: none; }}
+    .page-shell {{ display: block; width: min(100% - 36px, 760px); padding-top: 30px; }}
+    .archive-card {{ display: none; }}
+    h1 {{ font-size: clamp(2.1rem, 11vw, 3rem); }}
+    .lead {{ font-size: 1.08rem; }}
+  }}
+  @media (max-width: 600px) {{
+    .site-header nav a:last-child {{ display: none; }}
+    .stat {{ padding: 12px 10px; }}
+    .stat small {{ font-size: 0.58rem; }}
+    .stat strong {{ font-size: 0.9rem; }}
+    .chart-card {{ margin-inline: -8px; }}
+    .nerd-callout {{ display: block; }}
+    .nerd-callout::after {{ display: block; clear: both; content: ""; }}
+    .nerd-image {{ float: left; width: 72px; height: 72px; margin: 0 16px 8px 0; padding: 6px; }}
+    footer {{ display: grid; gap: 2px; }}
+    footer b {{ display: none; }}
+  }}
+  @media (prefers-reduced-motion: reduce) {{
+    html {{ scroll-behavior: auto; }}
   }}
 </style>
 </head>
 <body>
-  <!--ARKIV-MENY-START-->{meny}<!--ARKIV-MENY-END-->
-  <main>
-    <p style="color:#888; font-size:0.85em;">Publisert {dato}</p>
-    <h1>{tittel}</h1>
-    <p class="ingress">{ingress}</p>
-    <canvas id="chart" height="280"></canvas>
-    <div class="spekulasjon">
-      <p class="spekulasjon-tittel">Nerden spekulerer:</p>
-      <p>{spekulasjon}</p>
-    </div>
-    <p class="disclaimer">
-      {kommentar} Denne siden genereres automatisk fra offentlige SSB-tall og
-      er ment som underholdning. Korrelasjon er ikke kausalitet — det er
-      faktisk hele poenget med siden.
-    </p>
-  </main>
+<header class="site-header">
+  <a class="wordmark" href="{forside_lenke}" aria-label="Korrelasjonsnerden – forsiden">Korrelasjonsnerden<span>.</span></a>
+  <nav aria-label="Hovedmeny">
+    <a href="{forside_lenke}">Forsiden</a>
+    <a href="#arkiv">Arkiv</a>
+    <a href="#om">Om prosjektet</a>
+  </nav>
+</header>
+
+{meny_mobil}
+
+<main class="page-shell" id="top">
+{meny_desktop}
+
+  <article id="artikkel">
+    <header class="article-header">
+      <p class="eyebrow">Publisert {dato}</p>
+      <h1>{tittel}</h1>
+      <p class="lead">{ingress}</p>
+    </header>
+
+    <section class="stat-grid" aria-label="Nøkkeltall">
+      <div class="stat"><small>Korrelasjon</small><strong>r = {r_streng}</strong></div>
+      <div class="stat"><small>Periode</small><strong>{fra}–{til}</strong></div>
+      <div class="stat"><small>Datakilde</small><strong>SSB</strong></div>
+    </section>
+
+    <section class="chart-card" aria-labelledby="chart-heading">
+      <header class="chart-header">
+        <div>
+          <p class="kicker">Utvikling over tid</p>
+          <h2 id="chart-heading">To kurver. Én påfallende sammenheng.</h2>
+        </div>
+        <div class="legend" role="group" aria-label="Tegnforklaring">
+          <span><i class="blue"></i>{navn_a}</span><span><i class="red"></i>{navn_b}</span>
+        </div>
+      </header>
+      <div class="chart-scroll" tabindex="0" aria-label="Rull sidelengs for å se hele grafen på små skjermer">
+        <div class="chart-inner">
+          <canvas id="chart" role="img" aria-label="{chart_aria}"></canvas>
+        </div>
+      </div>
+      <p class="chart-note">{chart_note}</p>
+    </section>
+
+    <aside class="nerd-callout" aria-labelledby="nerd-heading">
+      <div class="nerd-image">
+        <img src="{bilde_sti}" width="96" height="96" alt="Illustrasjon av en statistikknerd med lupe og et stolpediagram">
+      </div>
+      <div>
+        <p class="kicker">Analyse*</p>
+        <h2 id="nerd-heading">Nerden spekulerer</h2>
+        <p>{spekulasjon}</p>
+      </div>
+    </aside>
+
+    <section class="disclaimer" id="om" aria-label="Om prosjektet">
+      <span aria-hidden="true">i</span>
+      <p>
+        Ingen årsakssammenheng er antydet, foreslått, eller ønsket. Denne
+        siden genereres automatisk fra offentlige SSB-tall og er ment som
+        underholdning. Korrelasjon er ikke kausalitet — det er faktisk hele
+        poenget med siden.
+      </p>
+    </section>
+    <footer>
+      <span>Data fra Statistisk sentralbyrå</span><b aria-hidden="true">·</b><span>Laget med overdreven statistisk selvtillit</span>
+    </footer>
+  </article>
+</main>
 <script>
 new Chart(document.getElementById('chart'), {{
   type: 'line',
@@ -832,25 +1108,55 @@ new Chart(document.getElementById('chart'), {{
     labels: {aar},
     datasets: [
       {{
-        label: '{navn_a}',
+        label: {navn_a_json},
         data: {x},
-        borderColor: '#2563eb',
+        borderColor: '#2d65c8',
+        backgroundColor: '#2d65c8',
+        pointBackgroundColor: '#2d65c8',
+        pointBorderColor: '#fffefb',
+        pointBorderWidth: 1.5,
+        pointRadius: 3,
+        borderWidth: 3,
         yAxisID: 'y',
         tension: 0.3,
       }},
       {{
-        label: '{navn_b}',
+        label: {navn_b_json},
         data: {y},
-        borderColor: '#dc2626',
+        borderColor: '#d84a43',
+        backgroundColor: '#d84a43',
+        pointBackgroundColor: '#d84a43',
+        pointBorderColor: '#fffefb',
+        pointBorderWidth: 1.5,
+        pointRadius: 3,
+        borderWidth: 3,
         yAxisID: 'y1',
         tension: 0.3,
       }}
     ]
   }},
   options: {{
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {{ intersect: false, mode: 'index' }},
+    plugins: {{ legend: {{ display: false }} }},
     scales: {{
-      y: {{ type: 'linear', position: 'left' }},
-      y1: {{ type: 'linear', position: 'right', grid: {{ drawOnChartArea: false }} }}
+      x: {{
+        grid: {{ color: '#e4e2dc' }},
+        ticks: {{ color: '#737b87', font: {{ family: 'Inter, sans-serif', size: 11 }} }},
+      }},
+      y: {{
+        type: 'linear', position: 'left',
+        title: {{ display: true, text: {navn_a_json}, color: '#174eae', font: {{ family: 'Inter, sans-serif', size: 11, weight: '700' }} }},
+        grid: {{ color: '#e4e2dc' }},
+        ticks: {{ color: '#737b87', font: {{ family: 'Inter, sans-serif', size: 11 }} }},
+      }},
+      y1: {{
+        type: 'linear', position: 'right',
+        title: {{ display: true, text: {navn_b_json}, color: '#a8423e', font: {{ family: 'Inter, sans-serif', size: 11, weight: '700' }} }},
+        grid: {{ drawOnChartArea: false }},
+        ticks: {{ color: '#a8423e', font: {{ family: 'Inter, sans-serif', size: 11 }} }},
+      }}
     }}
   }}
 }});
@@ -860,18 +1166,31 @@ new Chart(document.getElementById('chart'), {{
 """
 
 
-def lag_html(par: dict, tekst: dict, denne_sti: str, meny_html: str) -> str:
+def lag_html(par: dict, tekst: dict, denne_sti: str, meny_mobil: str, meny_desktop: str) -> str:
+    fra, til = par["aar"][0], par["aar"][-1]
+    r_streng = f"{par['r']:.3f}"
     return HTML_MAL.format(
         tittel=html.escape(tekst["overskrift"]),
         ingress=html.escape(tekst["ingress"]),
-        kommentar=html.escape(tekst["kommentar"]),
+        chart_note=html.escape(tekst["chart_note"]),
         spekulasjon=html.escape(tekst["spekulasjon"]),
-        meny=meny_html,
+        meny_mobil=meny_mobil,
+        meny_desktop=meny_desktop,
+        forside_lenke=relativ_lenke("index.html", denne_sti),
         dato=datetime.now().strftime("%d.%m.%Y"),
         chartjs_sti=relativ_lenke("chart.umd.min.js", denne_sti),
+        bilde_sti=relativ_lenke("assets/nerden-spekulerer.png", denne_sti),
+        r_streng=html.escape(r_streng),
+        fra=fra, til=til,
+        navn_a=html.escape(par["a"]),
+        navn_b=html.escape(par["b"]),
+        chart_aria=html.escape(
+            f"Graf over {par['a']} og {par['b']} fra {fra} til {til}, "
+            f"r = {r_streng}"
+        ),
         aar=json.dumps(par["aar"]),
-        navn_a=par["a"],
-        navn_b=par["b"],
+        navn_a_json=json.dumps(par["a"]),
+        navn_b_json=json.dumps(par["b"]),
         x=json.dumps(par["x"]),
         y=json.dumps(par["y"]),
     )
@@ -910,8 +1229,8 @@ def main():
 
     pathlib.Path(ny_sti).parent.mkdir(parents=True, exist_ok=True)
     for sti in (ny_sti, "index.html"):
-        meny = bygg_meny_html(alle, denne_sti=sti)
-        innhold = lag_html(par, tekst, sti, meny)
+        meny_mobil, meny_desktop = bygg_arkiv_blokker(alle, denne_sti=sti)
+        innhold = lag_html(par, tekst, sti, meny_mobil, meny_desktop)
         with open(sti, "w", encoding="utf-8") as f:
             f.write(innhold)
 
