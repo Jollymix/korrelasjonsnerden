@@ -314,36 +314,8 @@
       ]
     },
     {
-      "dato": "2026-11-08",
-      "uke": "2026-45",
-      "tabell_id": "09174",
-      "navn": "Lønn, sysselsetting og produktivitet, etter næring",
-      "temaer": [
-        {
-          "id": "nk03",
-          "label": "Nasjonalregnskap"
-        }
-      ]
-    },
-    {
-      "dato": "2026-11-08",
-      "uke": "2026-45",
-      "tabell_id": "06944",
-      "navn": "Inntekt for husholdninger, etter husholdningstype. Antall og median. Delområder (K)",
-      "temaer": [
-        {
-          "id": "if02",
-          "label": "Inntekt og formue"
-        },
-        {
-          "id": "in06",
-          "label": "Inntekt og forbruk"
-        }
-      ]
-    },
-    {
       "dato": "2026-11-02",
-      "uke": "2026-45-erstattet",
+      "uke": "2026-45",
       "tabell_id": "14700",
       "navn": "Konsumprisindeks (KPI), etter vare- og tjenestegruppe (2025=100)",
       "temaer": [
@@ -359,7 +331,7 @@
     },
     {
       "dato": "2026-11-02",
-      "uke": "2026-45-erstattet",
+      "uke": "2026-45",
       "tabell_id": "10507",
       "navn": "Avling og areal av ymse hagebruksvekstar",
       "temaer": [
