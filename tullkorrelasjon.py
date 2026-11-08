@@ -84,6 +84,26 @@ SOKEORD = [
     # Utvidet 2026-11 sammen med karantenen (færre emner tilgjengelig hver uke):
     "kino", "bibliotek", "museum", "bøker", "idrett", "fly", "ferge", "elbil",
     "avfall", "tømmer", "vannkraft", "internett", "honning", "juletre",
+    # Utvidet igjen 2026-11 — alle testet mot søke-API-et. Ord som traff
+    # valg/politikk, helse, innvandring, tobakk eller pengespill er valgt bort.
+    # Kultur og fritid
+    "teater", "konsert", "musikk", "spill", "film", "ski", "fotball",
+    # Utdanning
+    "studenter", "barnehage", "skole",
+    # Bolig og bygg
+    "boliger", "leie", "heis", "garasje", "parkering",
+    # Teknologi
+    "datamaskin", "mobil", "robot",
+    # Energi og miljø
+    "vindkraft", "pellets", "gass", "olje", "skog",
+    # Handel og forbruk
+    "parfyme", "godteri", "klær", "sko", "leker",
+    # Penger
+    "aksjer", "sparing", "forsikring", "bank",
+    # Reise, natur og hage
+    "ferie", "flyplass", "blomster", "hage",
+    # Mat — mest Jordbruk/Forbruk, nyttige når de emnene er ute av karantene
+    "jordbær", "epler", "kjøtt", "sukker", "brød",
 ]
 # ("gravferd" er bevisst fjernet — direkte dødsrelatert søkeord, se
 # INNHOLDSFILTER-seksjonen lenger ned.)
