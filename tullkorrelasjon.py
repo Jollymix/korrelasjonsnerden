@@ -59,7 +59,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime
+from datetime import date, datetime, timedelta
 
 API_BASIS = "https://data.ssb.no/api/pxwebapi/v2"
 USER_AGENT = "tullkorrelasjon/2.0 (+https://github.com/; kontakt: se repo)"
@@ -81,15 +81,19 @@ SOKEORD = [
     "konkurser", "arbeidsledige", "sykefravær", "lønn",
     "snøscooter", "sykkel", "motorsykkel", "traktor", "campingvogn",
     "is", "snø", "regn", "vind", "temperatur", "flom",
+    # Utvidet 2026-11 sammen med karantenen (færre emner tilgjengelig hver uke):
+    "kino", "bibliotek", "museum", "bøker", "idrett", "fly", "ferge", "elbil",
+    "avfall", "tømmer", "vannkraft", "internett", "honning", "juletre",
 ]
 # ("gravferd" er bevisst fjernet — direkte dødsrelatert søkeord, se
 # INNHOLDSFILTER-seksjonen lenger ned.)
 
-# Hvor mange søkeord vi bruker og hvor mange kandidattabeller vi henter data
-# for i én kjøring — begrenset for å holde oss godt innenfor SSBs
-# rate-limit (40 kall/60 sek) uten at scriptet trenger å bruke evigheter.
-MAKS_SOKEORD_PER_KJORING = 15
-MAKS_TABELLER_PER_KJORING = 12
+# hent_alle_serier() fortsetter med nye søkeord til den har MAL_ANTALL_SERIER
+# brukbare serier, men henter aldri mer enn MAKS_TABELLER_PER_KJORING tabeller
+# (2 SSB-kall hver; rate-limiten på 40 kall/60 sek håndteres i _api_get).
+MAL_ANTALL_SERIER = 12
+MAKS_TABELLER_PER_KJORING = 45
+MAKS_TABELLER_PER_SOKEORD = 2
 
 # Koder/labels vi tolker som "totalkategori" for en ikke-tid-dimensjon.
 TOTAL_KODER = {"0", "00", "000"}
@@ -169,10 +173,74 @@ def _er_sensitivt(tekst: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# KARANTENE — samme type data skal ikke dukke opp igjen før det har gått
+# KARANTENE_DAGER. "Type" = SSBs eget emne på nivå 2 i emnetreet (feltet
+# "paths" i søkesvaret), f.eks. js03 «Jakt», slik at «Felte hjort»,
+# «Tillatt felte hjort» og «Felte elg» alle havner i samme karantene, selv
+# om de er ulike tabeller. Selve tabell-ID-en settes også i karantene (i
+# tilfelle en tabell mangler emnesti). Begge seriene i ukens par legges
+# inn. Fasiten er karantene.json i repoet, som workflowen committer.
+# ---------------------------------------------------------------------------
+
+KARANTENE_FIL = pathlib.Path("karantene.json")
+KARANTENE_DAGER = 182  # ca. 6 måneder
+
+
+def tabell_temaer(tabell: dict) -> list:
+    """Henter ut emnene på nivå 2 (f.eks. {"id": "js03", "label": "Jakt"})
+    fra alle emnestiene til en tabell i SSBs søkesvar. Tabeller som bare
+    har nivå 1 bruker det i stedet."""
+    temaer = {}
+    for sti in tabell.get("paths") or []:
+        if not sti:
+            continue
+        node = sti[1] if len(sti) > 1 else sti[0]
+        if node.get("id"):
+            temaer[node["id"]] = node.get("label", node["id"])
+    return [{"id": k, "label": v} for k, v in temaer.items()]
+
+
+def les_karantene(idag: date | None = None) -> list:
+    """Returnerer de karanteneinnslagene som fortsatt er aktive."""
+    idag = idag or date.today()
+    if not KARANTENE_FIL.exists():
+        return []
+    innslag = json.loads(KARANTENE_FIL.read_text(encoding="utf-8")).get("innslag", [])
+    grense = idag - timedelta(days=KARANTENE_DAGER)
+    return [e for e in innslag if date.fromisoformat(e["dato"]) > grense]
+
+
+def karantene_sperrer(karantene: list) -> tuple:
+    """(sperrede tabell-ID-er, sperrede emne-ID-er)."""
+    tabeller = {e["tabell_id"] for e in karantene}
+    temaer = {t["id"] for e in karantene for t in e.get("temaer", [])}
+    return tabeller, temaer
+
+
+def er_i_karantene(tabell_id: str, temaer: list, sperrer: tuple) -> bool:
+    sperrede_tabeller, sperrede_temaer = sperrer
+    return tabell_id in sperrede_tabeller or any(t["id"] in sperrede_temaer for t in temaer)
+
+
+def skriv_karantene(nye: list, idag: date | None = None) -> None:
+    """Legger til nye innslag og rydder bort de som er utløpt."""
+    idag = idag or date.today()
+    aktive = les_karantene(idag) + nye
+    KARANTENE_FIL.write_text(json.dumps({
+        "forklaring": (
+            f"Datatyper (SSB-emner på nivå 2 + tabell-ID) som er brukt de siste "
+            f"{KARANTENE_DAGER} dagene og derfor ikke kan brukes igjen ennå. "
+            "Vedlikeholdes automatisk av tullkorrelasjon.py."
+        ),
+        "innslag": aktive,
+    }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
 # 3. TABELLSØK
 # ---------------------------------------------------------------------------
 
-def sok_tabeller(sokeord: str, pagesize: int = 5) -> list:
+def sok_tabeller(sokeord: str, pagesize: int = 10) -> list:
     """Søker etter tabeller for ett søkeord. Returnerer kun tabeller med en
     årlig (eller årlig-lignende) tidsdimensjon — måneds-/kvartalstabeller
     filtreres bort siden vi bygger {år: verdi}-serier — og filtrerer bort
@@ -190,22 +258,20 @@ def sok_tabeller(sokeord: str, pagesize: int = 5) -> list:
     ]
 
 
-def bygg_kandidatliste() -> list:
-    """Trekker et tilfeldig utvalg søkeord, samler unike tabell-ID-er fra
-    treffene, og returnerer et tilfeldig utvalg av dem."""
-    utvalg = random.sample(SOKEORD, min(MAKS_SOKEORD_PER_KJORING, len(SOKEORD)))
-    funnet = {}
-    for ord in utvalg:
-        for t in sok_tabeller(ord):
-            funnet.setdefault(t["id"], t.get("label", t["id"]))
-        time.sleep(1.5)
-
-    ider = list(funnet.keys())
-    random.shuffle(ider)
-    valgte = ider[:MAKS_TABELLER_PER_KJORING]
-    print(f"Søkte på {len(utvalg)} ord, fant {len(ider)} unike tabeller, "
-          f"henter data for {len(valgte)} av dem.")
-    return valgte
+def kandidater_for_sokeord(sokeord: str, sett: set, sperrer: tuple) -> list:
+    """Søker på ett ord og returnerer inntil MAKS_TABELLER_PER_SOKEORD nye
+    tabeller utenfor karantene som [(tabell_id, temaer), ...] i tilfeldig
+    rekkefølge. Taket per ord gir spredning på flere ulike tema."""
+    treff = []
+    for t in sok_tabeller(sokeord):
+        if t["id"] in sett:
+            continue
+        sett.add(t["id"])
+        temaer = tabell_temaer(t)
+        if not er_i_karantene(t["id"], temaer, sperrer):
+            treff.append((t["id"], temaer))
+    random.shuffle(treff)
+    return treff[:MAKS_TABELLER_PER_SOKEORD]
 
 
 # ---------------------------------------------------------------------------
@@ -289,21 +355,47 @@ def hent_serie_for_tabell(tabell_id: str) -> dict | None:
     return {"navn": rens_tittel(meta.get("label", tabell_id)), "data": punkter}
 
 
-def hent_alle_serier() -> list:
-    ider = bygg_kandidatliste()
+def hent_alle_serier(sperrer: tuple = (set(), set())) -> list:
+    """Går gjennom søkeordene i tilfeldig rekkefølge og henter serier til vi
+    har MAL_ANTALL_SERIER brukbare, eller har brukt opp MAKS_TABELLER_PER_KJORING
+    / søkeordene. Adaptivt fordi karantenen sperrer mange tabeller, og mange
+    av de som er igjen har for få år til å kunne brukes."""
     ok = []
-    for tabell_id in ider:
-        try:
-            serie = hent_serie_for_tabell(tabell_id)
-            if serie:
-                ok.append(serie)
-                print(f"  OK: {serie['navn']} ({len(serie['data'])} datapunkter)")
-            else:
-                print(f"  Hoppet over {tabell_id} — for få datapunkter")
-        except (urllib.error.URLError, urllib.error.HTTPError, KeyError, ValueError) as e:
-            print(f"  Feil ved henting av tabell {tabell_id}: {e}")
+    sett = set()
+    hentet = 0
+    brukte_ord = 0
+    for sokeord in random.sample(SOKEORD, len(SOKEORD)):
+        if len(ok) >= MAL_ANTALL_SERIER or hentet >= MAKS_TABELLER_PER_KJORING:
+            break
+        brukte_ord += 1
+        kandidater = kandidater_for_sokeord(sokeord, sett, sperrer)
         time.sleep(1.5)
+        for tabell_id, temaer in kandidater:
+            if hentet >= MAKS_TABELLER_PER_KJORING:
+                break
+            hentet += 1
+            ok_serie = _hent_en(tabell_id, temaer)
+            if ok_serie:
+                ok.append(ok_serie)
+            time.sleep(1.5)
+    print(f"Brukte {brukte_ord} søkeord, hentet {hentet} tabeller, "
+          f"{len(ok)} brukbare serier.")
     return ok
+
+
+def _hent_en(tabell_id: str, temaer: list) -> dict | None:
+    try:
+        serie = hent_serie_for_tabell(tabell_id)
+    except (urllib.error.URLError, urllib.error.HTTPError, KeyError, ValueError) as e:
+        print(f"  Feil ved henting av tabell {tabell_id}: {e}")
+        return None
+    if not serie:
+        print(f"  Hoppet over {tabell_id} — for få datapunkter")
+        return None
+    serie["tabell_id"] = tabell_id
+    serie["temaer"] = temaer
+    print(f"  OK: {serie['navn']} ({len(serie['data'])} datapunkter)")
+    return serie
 
 
 # ---------------------------------------------------------------------------
@@ -421,6 +513,11 @@ def finn_beste_par(serier: list, min_overlapp: int = 5) -> dict | None:
             # avslører noe selve tabelltittelen ikke gjorde.
             if _er_sensitivt(a["navn"]) or _er_sensitivt(b["navn"]):
                 continue
+            # To serier av samme type (f.eks. «Felte hjort» og «Tillatt
+            # felte hjort») korrelerer selvsagt — det er ikke tull, bare
+            # kjedelig. Krev ulike SSB-emner.
+            if {t["id"] for t in a.get("temaer", [])} & {t["id"] for t in b.get("temaer", [])}:
+                continue
             felles_aar = sorted(set(a["data"]) & set(b["data"]))
             if len(felles_aar) < min_overlapp:
                 continue
@@ -433,6 +530,7 @@ def finn_beste_par(serier: list, min_overlapp: int = 5) -> dict | None:
             if abs(r) > 0.85:
                 kandidater.append({
                     "a": a["navn"], "b": b["navn"], "r": r,
+                    "serier": (a, b),
                     "aar": felles_aar, "x": x, "y": y,
                 })
 
@@ -1200,8 +1298,13 @@ def lag_html(par: dict, tekst: dict, denne_sti: str, meny_mobil: str, meny_deskt
 # ---------------------------------------------------------------------------
 
 def main():
+    karantene = les_karantene()
+    sperrer = karantene_sperrer(karantene)
+    print(f"Karantene: {len(sperrer[0])} tabeller / {len(sperrer[1])} emner sperret "
+          f"({', '.join(sorted({t['label'] for e in karantene for t in e.get('temaer', [])})) or 'ingen'}).")
+
     print("Søker etter tabeller hos SSB ...")
-    serier = hent_alle_serier()
+    serier = hent_alle_serier(sperrer)
     print(f"Fikk {len(serier)} brukbare serier.")
 
     serier = vurder_datagrunnlag(serier)
@@ -1234,6 +1337,18 @@ def main():
             f.write(innhold)
 
     oppdater_meny_i_eldre_filer(alle, unnta={ny_sti, "index.html"})
+
+    # Ved manuell re-kjøring samme uke: erstatt ukens gamle innslag.
+    uke_id = f"{aar}-{uke:02d}"
+    if KARANTENE_FIL.exists():
+        data = json.loads(KARANTENE_FIL.read_text(encoding="utf-8"))
+        data["innslag"] = [e for e in data.get("innslag", []) if e.get("uke") != uke_id]
+        KARANTENE_FIL.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    skriv_karantene([
+        {"dato": date.today().isoformat(), "uke": uke_id, "tabell_id": s["tabell_id"],
+         "navn": s["navn"], "temaer": s.get("temaer", [])}
+        for s in par["serier"]
+    ])
 
     print(f"Ferdig: {par['a']} vs {par['b']} (r = {par['r']:.3f})")
     print(f"Skrev index.html og {ny_sti} (arkiv har nå {len(alle)} innslag)")

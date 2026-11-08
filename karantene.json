@@ -1,0 +1,345 @@
+{
+  "forklaring": "Datatyper (SSB-emner på nivå 2 + tabell-ID) som er brukt de siste 182 dagene og derfor ikke kan brukes igjen ennå. Vedlikeholdes automatisk av tullkorrelasjon.py.",
+  "innslag": [
+    {
+      "dato": "2026-08-10",
+      "uke": "2026-33",
+      "tabell_id": "06036",
+      "navn": "Felte elg",
+      "temaer": [
+        {
+          "id": "js03",
+          "label": "Jakt"
+        }
+      ]
+    },
+    {
+      "dato": "2026-08-10",
+      "uke": "2026-33",
+      "tabell_id": "14700",
+      "navn": "Konsumprisindeks (KPI), etter vare- og tjenestegruppe (2025=100)",
+      "temaer": [
+        {
+          "id": "if01",
+          "label": "Forbruk"
+        },
+        {
+          "id": "pp04",
+          "label": "Konsumpriser"
+        }
+      ]
+    },
+    {
+      "dato": "2026-08-17",
+      "uke": "2026-34",
+      "tabell_id": "12891",
+      "navn": "Etternavn brukt av 200 personer eller flere",
+      "temaer": [
+        {
+          "id": "be09",
+          "label": "Navn"
+        }
+      ]
+    },
+    {
+      "dato": "2026-08-17",
+      "uke": "2026-34",
+      "tabell_id": "09787",
+      "navn": "Elvefiske. Fangst og talet på elvar med fangst",
+      "temaer": [
+        {
+          "id": "js02",
+          "label": "Fiske og fangst"
+        }
+      ]
+    },
+    {
+      "dato": "2026-08-24",
+      "uke": "2026-35",
+      "tabell_id": "04883",
+      "navn": "Tilfeller av tyveri og skadeverk siste 12 måneder, etter type lovbrudd og skadeverdi (i 1000 kroner), kjønn og tid (prosent)",
+      "temaer": [
+        {
+          "id": "sk02",
+          "label": "Kriminalitet og rettsvesen"
+        },
+        {
+          "id": "sk03",
+          "label": "Levekår"
+        }
+      ]
+    },
+    {
+      "dato": "2026-08-24",
+      "uke": "2026-35",
+      "tabell_id": "03434",
+      "navn": "Felte hjort, etter alder og kjønn",
+      "temaer": [
+        {
+          "id": "js03",
+          "label": "Jakt"
+        }
+      ]
+    },
+    {
+      "dato": "2026-08-31",
+      "uke": "2026-36",
+      "tabell_id": "07646",
+      "navn": "Samisk statistikk. Jordbruksareal i drift i STN-området (dekar)",
+      "temaer": [
+        {
+          "id": "be05",
+          "label": "Folketall"
+        }
+      ]
+    },
+    {
+      "dato": "2026-08-31",
+      "uke": "2026-36",
+      "tabell_id": "09283",
+      "navn": "Eksport av fisk, kreps-, bløtdyr og varer derav (SITC 03), etter fiskeart og land/handelsområde/verdensdel",
+      "temaer": [
+        {
+          "id": "ut02",
+          "label": "Utenrikshandel"
+        }
+      ]
+    },
+    {
+      "dato": "2026-09-07",
+      "uke": "2026-37",
+      "tabell_id": "09283",
+      "navn": "Eksport av fisk, kreps-, bløtdyr og varer derav (SITC 03), etter fiskeart og land/handelsområde/verdensdel",
+      "temaer": [
+        {
+          "id": "ut02",
+          "label": "Utenrikshandel"
+        }
+      ]
+    },
+    {
+      "dato": "2026-09-07",
+      "uke": "2026-37",
+      "tabell_id": "13697",
+      "navn": "Prosentvise bidrag av energi og næringsstoff frå selde matvarer",
+      "temaer": [
+        {
+          "id": "he03",
+          "label": "Helseforhold og levevaner"
+        }
+      ]
+    },
+    {
+      "dato": "2026-09-14",
+      "uke": "2026-38",
+      "tabell_id": "14700",
+      "navn": "Konsumprisindeks (KPI), etter vare- og tjenestegruppe (2025=100)",
+      "temaer": [
+        {
+          "id": "if01",
+          "label": "Forbruk"
+        },
+        {
+          "id": "pp04",
+          "label": "Konsumpriser"
+        }
+      ]
+    },
+    {
+      "dato": "2026-09-14",
+      "uke": "2026-38",
+      "tabell_id": "12851",
+      "navn": "Månedslønn for lærlinger, etter yrke, kjønn og arbeidstid",
+      "temaer": [
+        {
+          "id": "al05",
+          "label": "Lønn og arbeidskraftkostnader"
+        },
+        {
+          "id": "in01",
+          "label": "Arbeid og lønn"
+        }
+      ]
+    },
+    {
+      "dato": "2026-09-21",
+      "uke": "2026-39",
+      "tabell_id": "08696",
+      "navn": "Tillatt felte elg",
+      "temaer": [
+        {
+          "id": "js03",
+          "label": "Jakt"
+        }
+      ]
+    },
+    {
+      "dato": "2026-09-21",
+      "uke": "2026-39",
+      "tabell_id": "09283",
+      "navn": "Eksport av fisk, kreps-, bløtdyr og varer derav (SITC 03), etter fiskeart og land/handelsområde/verdensdel",
+      "temaer": [
+        {
+          "id": "ut02",
+          "label": "Utenrikshandel"
+        }
+      ]
+    },
+    {
+      "dato": "2026-09-28",
+      "uke": "2026-40",
+      "tabell_id": "05980",
+      "navn": "Jordbruksbedrifter, etter vekstar og gjennomsnittleg areal",
+      "temaer": [
+        {
+          "id": "js04",
+          "label": "Jordbruk"
+        }
+      ]
+    },
+    {
+      "dato": "2026-09-28",
+      "uke": "2026-40",
+      "tabell_id": "03434",
+      "navn": "Felte hjort, etter alder og kjønn",
+      "temaer": [
+        {
+          "id": "js03",
+          "label": "Jakt"
+        }
+      ]
+    },
+    {
+      "dato": "2026-10-05",
+      "uke": "2026-41",
+      "tabell_id": "05980",
+      "navn": "Jordbruksbedrifter, etter vekstar og gjennomsnittleg areal",
+      "temaer": [
+        {
+          "id": "js04",
+          "label": "Jordbruk"
+        }
+      ]
+    },
+    {
+      "dato": "2026-10-05",
+      "uke": "2026-41",
+      "tabell_id": "12851",
+      "navn": "Månedslønn for lærlinger, etter yrke, kjønn og arbeidstid",
+      "temaer": [
+        {
+          "id": "al05",
+          "label": "Lønn og arbeidskraftkostnader"
+        },
+        {
+          "id": "in01",
+          "label": "Arbeid og lønn"
+        }
+      ]
+    },
+    {
+      "dato": "2026-10-12",
+      "uke": "2026-42",
+      "tabell_id": "13697",
+      "navn": "Prosentvise bidrag av energi og næringsstoff frå selde matvarer",
+      "temaer": [
+        {
+          "id": "he03",
+          "label": "Helseforhold og levevaner"
+        }
+      ]
+    },
+    {
+      "dato": "2026-10-12",
+      "uke": "2026-42",
+      "tabell_id": "08697",
+      "navn": "Tillatt felte hjort",
+      "temaer": [
+        {
+          "id": "js03",
+          "label": "Jakt"
+        }
+      ]
+    },
+    {
+      "dato": "2026-10-19",
+      "uke": "2026-43",
+      "tabell_id": "12891",
+      "navn": "Etternavn brukt av 200 personer eller flere",
+      "temaer": [
+        {
+          "id": "be09",
+          "label": "Navn"
+        }
+      ]
+    },
+    {
+      "dato": "2026-10-19",
+      "uke": "2026-43",
+      "tabell_id": "01960",
+      "navn": "Kjøretøygrupper",
+      "temaer": [
+        {
+          "id": "sv14",
+          "label": "Miljø og transport"
+        },
+        {
+          "id": "tr01",
+          "label": "Landtransport"
+        }
+      ]
+    },
+    {
+      "dato": "2026-10-26",
+      "uke": "2026-44",
+      "tabell_id": "08697",
+      "navn": "Tillatt felte hjort",
+      "temaer": [
+        {
+          "id": "js03",
+          "label": "Jakt"
+        }
+      ]
+    },
+    {
+      "dato": "2026-10-26",
+      "uke": "2026-44",
+      "tabell_id": "09283",
+      "navn": "Eksport av fisk, kreps-, bløtdyr og varer derav (SITC 03), etter fiskeart og land/handelsområde/verdensdel",
+      "temaer": [
+        {
+          "id": "ut02",
+          "label": "Utenrikshandel"
+        }
+      ]
+    },
+    {
+      "dato": "2026-11-02",
+      "uke": "2026-45",
+      "tabell_id": "14700",
+      "navn": "Konsumprisindeks (KPI), etter vare- og tjenestegruppe (2025=100)",
+      "temaer": [
+        {
+          "id": "if01",
+          "label": "Forbruk"
+        },
+        {
+          "id": "pp04",
+          "label": "Konsumpriser"
+        }
+      ]
+    },
+    {
+      "dato": "2026-11-02",
+      "uke": "2026-45",
+      "tabell_id": "10507",
+      "navn": "Avling og areal av ymse hagebruksvekstar",
+      "temaer": [
+        {
+          "id": "js04",
+          "label": "Jordbruk"
+        }
+      ]
+    }
+  ]
+}

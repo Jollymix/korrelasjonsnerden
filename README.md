@@ -20,6 +20,17 @@ Kjøres ukentlig (mandager kl. 06:00 UTC) via
 [`.github/workflows/ukentlig.yml`](.github/workflows/ukentlig.yml), som
 committer den ferske `index.html` (og arkivet, se under) rett inn i repoet.
 
+## Karantene (6 måneder per datatype)
+
+For å unngå at samme tema går igjen uke etter uke, settes begge seriene i
+ukens par i karantene i 182 dager, lagret i `karantene.json`. Karantenen
+gjelder både selve tabellen og SSBs emne på nivå 2 i emnetreet (f.eks.
+`js03` «Jakt»), så «Felte hjort», «Tillatt felte hjort» og «Felte elg»
+sperres sammen. Tabeller i karantene filtreres bort allerede i søket, og
+scriptet fortsetter med flere søkeord til det har nok brukbare serier. To
+serier fra samme emne blir heller aldri paret med hverandre. Utløpte
+innslag ryddes bort automatisk.
+
 ## Arkiv
 
 Hver ukes side lagres permanent under `arkiv/<år>/uke-<nn>.html` (ISO-uke),
