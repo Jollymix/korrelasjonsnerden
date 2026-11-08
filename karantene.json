@@ -314,30 +314,30 @@
       ]
     },
     {
-      "dato": "2026-11-02",
+      "dato": "2026-11-08",
       "uke": "2026-45",
-      "tabell_id": "14700",
-      "navn": "Konsumprisindeks (KPI), etter vare- og tjenestegruppe (2025=100)",
+      "tabell_id": "09174",
+      "navn": "Lønn, sysselsetting og produktivitet, etter næring",
       "temaer": [
         {
-          "id": "if01",
-          "label": "Forbruk"
-        },
-        {
-          "id": "pp04",
-          "label": "Konsumpriser"
+          "id": "nk03",
+          "label": "Nasjonalregnskap"
         }
       ]
     },
     {
-      "dato": "2026-11-02",
+      "dato": "2026-11-08",
       "uke": "2026-45",
-      "tabell_id": "10507",
-      "navn": "Avling og areal av ymse hagebruksvekstar",
+      "tabell_id": "06944",
+      "navn": "Inntekt for husholdninger, etter husholdningstype. Antall og median. Delområder (K)",
       "temaer": [
         {
-          "id": "js04",
-          "label": "Jordbruk"
+          "id": "if02",
+          "label": "Inntekt og formue"
+        },
+        {
+          "id": "in06",
+          "label": "Inntekt og forbruk"
         }
       ]
     }
