@@ -340,6 +340,34 @@
           "label": "Inntekt og forbruk"
         }
       ]
+    },
+    {
+      "dato": "2026-11-02",
+      "uke": "2026-45-erstattet",
+      "tabell_id": "14700",
+      "navn": "Konsumprisindeks (KPI), etter vare- og tjenestegruppe (2025=100)",
+      "temaer": [
+        {
+          "id": "if01",
+          "label": "Forbruk"
+        },
+        {
+          "id": "pp04",
+          "label": "Konsumpriser"
+        }
+      ]
+    },
+    {
+      "dato": "2026-11-02",
+      "uke": "2026-45-erstattet",
+      "tabell_id": "10507",
+      "navn": "Avling og areal av ymse hagebruksvekstar",
+      "temaer": [
+        {
+          "id": "js04",
+          "label": "Jordbruk"
+        }
+      ]
     }
   ]
 }
