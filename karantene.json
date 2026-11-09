@@ -340,6 +340,30 @@
           "label": "Jordbruk"
         }
       ]
+    },
+    {
+      "dato": "2026-11-09",
+      "uke": "2026-46",
+      "tabell_id": "04188",
+      "navn": "Omsetning av alkoholholdige drikkevarer",
+      "temaer": [
+        {
+          "id": "vt02",
+          "label": "Varehandel"
+        }
+      ]
+    },
+    {
+      "dato": "2026-11-09",
+      "uke": "2026-46",
+      "tabell_id": "07002",
+      "navn": "Sted for bruk av internett de siste 3 måneder, etter kjønn og alder (prosent)",
+      "temaer": [
+        {
+          "id": "ti02",
+          "label": "Digitalisering, innovasjon og patenter"
+        }
+      ]
     }
   ]
 }
